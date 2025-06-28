@@ -49,6 +49,8 @@ export class MemStorage implements IStorage {
   async createGame(game: InsertGame): Promise<Game> {
     const newGame: Game = {
       ...game,
+      status: game.status || 'setup',
+      currentRound: game.currentRound || 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
