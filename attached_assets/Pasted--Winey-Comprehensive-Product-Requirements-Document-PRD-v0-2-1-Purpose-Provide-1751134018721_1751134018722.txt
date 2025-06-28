@@ -1,0 +1,419 @@
+**Winey – Comprehensive Product Requirements Document (PRD) v0.2**
+
+---
+
+### **1. Purpose**
+
+Provide a clear, deterministic blueprint for building **Winey**, a browser‑based multiplayer wine‑tasting game. The PRD captures every rule, edge case, data structure, and UI interaction required for an MVP implementation inside **Windsurf** (no-code / low‑code environment). The host will progressively feed sections of this PRD to Windsurf’s AI agent; therefore, each section must be self‑contained and logically ordered.
+
+### **2. Glossary**
+
+| **Term** | **Definition** |
+| --- | --- |
+| **Bottle** | One of 20 wines entered by the host. Unique across the entire game. |
+| **Label Name** | Required string that acts as human‑readable identifier (e.g., “Obama”). |
+| **Fun Name** | Optional playful descriptor (“Wet Socks Pinot”). Visible to players during rounds. |
+| **Price** | Integer (USD). Hidden from players until final reveal. |
+| **Round** | A tasting cycle with exactly 4 unique bottles. 5 rounds total (static). |
+| **Submission** | A single player’s tasting notes + ranking for the 4 bottles in the current round. |
+| **Leaderboard** | Ordered list of players by cumulative score. Updates only after a round ends. |
+| **Sommelier’s Gambit** | Bonus section after all 5 rounds. Players guess most/least expensive bottle and pick a favorite. |
+| **Host** | Player who sets up the game and controls the admin dashboard. |
+| **Spectator** | User who visits join link but never submits a name. Read‑only access. |
+
+### **3. Fixed Game Parameters (MVP)**
+
+- Players: **20** (exactly)
+- Bottles: **20** (one per player, entered by host)
+- Rounds: **5**
+- Bottles per round: **4** (no repeats)
+- Device model: Bring‑your‑own (mobile responsive first)
+
+### **4. Data Model (JSON‑like)**
+
+```
+Game {
+  id: UUID,
+  status: enum['setup','lobby','in_round','countdown','reveal','gambit','final']
+  currentRound: 1‑5,
+  bottles: Bottle[20],
+  rounds: Round[5],
+  players: Player[≤20],
+  createdAt, updatedAt
+}
+
+Bottle {
+  id: UUID,
+  labelName: string (unique, required),
+  funName: string (optional),
+  price: integer (>=0),
+  roundIndex: 0‑4 // assigned after randomization
+}
+
+Round {
+  index: 0‑4,
+  bottleIds: UUID[4],
+  submissions: Submission[],
+  revealed: boolean
+}
+
+Player {
+  id: UUID,
+  displayName: string,
+  score: integer (default 0),
+  isHost: boolean,
+  status: enum['active','kicked','spectator']
+}
+
+Submission {
+  playerId,
+  roundIndex,
+  tastingNotes: {
+    bottleId: string (≥10 chars) // repeated four times
+  },
+  ranking: [bottleId] // length 4 ordered $$$$→$
+  locked: boolean
+  points: integer 0‑4
+}
+```
+
+### **5. Game‑State Timeline**
+
+1. **Setup** – host enters 20 bottles → click *Randomize* → link generated.
+2. **Lobby** – players join via link, enter name → waiting room until host clicks *Start*.
+3. **In Round (1‑5)**
+    - UI shows 4 bottles (Fun Names) + tasting note fields + drag‑and‑drop rank list.
+    - Validation: all tasting notes ≥10 chars & ranking array length 4 & no duplicates.
+    - On submit → confirmation modal → lock submission.
+4. **Countdown** – triggered automatically when submissions.length == playersActive **or** host clicks *Close Round*.
+    - 10‑sec visible timer (host can *Undo* within first 3 seconds).
+5. **Reveal** – show correct order (Fun Names only), per‑player score, updated leaderboard.
+6. **Next Round** – auto‑advance after 15‑sec or host manual.
+7. **Sommelier’s Gambit** – after Round 5 only.
+8. **Final** – final leaderboard + full bottle list (price, label & fun names, roundIdx). Download button.
+
+### **6. User Roles & Permissions**
+
+| **Action** | **Host** | **Player** | **Spectator** |
+| --- | --- | --- | --- |
+| Enter bottles | ✅ | ❌ | ❌ |
+| Start game | ✅ | ❌ | ❌ |
+| Submit tasting notes & ranking | ✅ (if playing) | ✅ | ❌ |
+| View leaderboard | ✅ | ✅ | ✅ |
+| Close / undo / reopen round | ✅ | ❌ | ❌ |
+| Kick / rename player | ✅ | ❌ | ❌ |
+| End game early | ✅ | ❌ | ❌ |
+| Download results | ✅ | ✅ | ✅ |
+
+### **7. Detailed Flow Descriptions**
+
+### **7.1 Game Setup (Host)**
+
+1. *Create Game* → enter display name (auto‑host).
+2. Bottle input form (20 rows, inline validation):
+    - Label (required, unique, 3‑20 chars)
+    - Fun Name (0‑40 chars)
+    - Price (numeric ≥1)
+3. *Randomize Bottles* allocates 4 bottle ids per round using a secure PRNG seeded with game.id to ensure deterministic order for auditing.
+4. Display preview grid (Round vs Bottle Fun Name) for host verification.
+5. Host clicks *Generate Link* → lobby URL /join/{game.id} copied to clipboard.
+
+### **7.2 Player Join & Lobby**
+
+- Join screen: input name (3‑15 chars). If left blank → spectator.
+- Name uniqueness enforced (append #2 if conflict).
+- Lobby shows list of players + host highlight + spectator count.
+- Host can remove names pre‑start.
+- Host presses *Start* → round 1 begins.
+
+### **7.3 Round Cycle Detail**
+
+- **UI Layout** (mobile):
+    1. Card stack of 4 Fun Names with tasting‑note textarea under each.
+    2. Sticky rank column ($$$$→$) with drop‑targets.
+- **Validation Rules**:
+    - All 4 tasting notes ≥10 chars.
+    - Rank list must contain exactly the 4 bottle ids, each once.
+- **Submit → Confirmation Modal** (prevent accidental): “You cannot edit after submitting.” Buttons: *Cancel*, *Submit*.
+- **Locked State**: fields disabled, banner “Waiting for others… (X/20 submitted)” + button to open leaderboard.
+- **Host Close Round**: locks outstanding players automatically with zero points for that round.
+- **Undo Close**: allowed for 3 seconds; afterwards countdown irreversible.
+
+### **7.4 Countdown & Reveal**
+
+- Global synchronized 10‑sec timer broadcast via WebSocket.
+- During countdown, all inputs disabled.
+- Reveal screen shows:
+    - Ordered Fun Names list with crown icon on $$$$.
+    - Table of players with round points.
+    - Animated slide‑in leaderboard (cumulative).
+- Button: “Next Round” appears for host after 10‑sec grace.
+
+### **7.5 Sommelier’s Gambit**
+
+- Shown only if all 5 rounds completed.
+- UI: picker list of 20 Fun Names.
+- Validation: must choose 1 for Most Expensive, 1 for Least Expensive (cannot be same id), and 1 Favorite (may overlap).
+- Scoring engine adds +2 points per correct expensive/cheap guess, updates leaderboard.
+
+### **7.6 Final Summary**
+
+- Sections:
+    1. Winner banner + final leaderboard.
+    2. Player’s personal card with their Gambit selections and whether they scored.
+    3. Master Bottle Table sorted by price desc.
+- Buttons: *Download PDF*, *Copy Link for Spectators*.
+
+### **8. Admin Dashboard (Host‑only overlay)**
+
+- Floating gear icon → opens side‑panel with tabs:
+    1. **Status** – live round, countdown timer, submission progress bar.
+    2. **Players** – list (searchable), actions: Rename, Kick.
+    3. **Controls** – Close Round / Undo, Reopen Round (select player), Advance, End Game Early.
+- Audit log visible for transparency.
+
+### **9. Spectator Mode**
+
+- Auto‑redirect to /spectate/{game.id}.
+- Display:
+    - Current round progress bar.
+    - Leaderboard (last completed round).
+    - Reveal animations.
+- No forms; emits spectator=true flag to socket for lighter traffic.
+
+### **10. Scoring Engine**
+
+```
+function scoreRound(correctOrder: string[], playerRank: string[]): number {
+  let pts = 0;
+  for (let i = 0; i < 4; i++) if (correctOrder[i] === playerRank[i]) pts++;
+  return pts;
+}
+```
+
+- Cumulative player.score += pts.
+- Gambit bonuses applied after base total.
+- Kicked or absent players maintain current score; no future submissions.
+
+### **11. Randomization Algorithm**
+
+- Use crypto.getRandomValues (browser) or server‑side seedrandom(game.id).
+- Assign bottle index i into round Math.floor(i/4) after shuffle.
+- Deterministic for replay debugging by reseeding with the same game.id.
+
+### **12. UI / UX Style Guide**
+
+- **Typography**: Inter or similar. Header 24‑32px, body 16px.
+- **Color Tokens**: wine‑red #8A1538, rosé #F4C4CF, gold #F6EDCF, sage #D6E1CF, charcoal #222.
+- Buttons: pill‑shape, 12‑px radius, solid fill with subtle gradient.
+- Animation: Fade‑slide 150‑ms, cubic‑bezier(.4,.0,.2,1).
+- Emojis sparingly: countdown “⏳”, reveal “🍷🔥”, crown “👑”.
+
+### **13. Security & Privacy**
+
+- Join link contains 8‑char slug + 4‑digit PIN (embedded in URL fragment so PIN not sent to server on GET).
+- Host token stored in localStorage.
+- WebSocket auth via gameId + playerId + token signed JWT.
+- All prices encrypted in transit and never broadcast until final summary.
+
+### **14. Error Handling & Edge Cases**
+
+| **Edge Case** | **Expected Behaviour** |
+| --- | --- |
+| Player disconnects mid‑round | Their submission remains if already locked; if not submitted, host may Close Round or Reopen later. |
+| Duplicate label names on setup | Inline error, must be unique. |
+| Host refreshes browser | Host token re‑auths → dashboard restored. |
+| Less than 20 players join | Allowed; missing players treated as empty seats with 0 score. |
+| Host ends game early | Skip Gambit, compute totals only from completed rounds. |
+| Undo window expired | Countdown cannot be cancelled. |
+
+### **15. Analytics**
+
+- Events: game_start, submit_round, round_reveal, gambit_start, final_download.
+- Basic metrics: avg submission time, tasting note length, distribution of score.
+
+### **17. Logic Safeguards & Clarifications**
+
+- **Unique Prices Required:** Host must enter distinct prices for all 20 bottles to avoid ambiguous rankings. Inline validation enforces uniqueness.
+- **Duplicate Fun Names Handling:** Fun Name does not need to be unique; if duplicates exist, the UI automatically appends a numeric suffix during reveals (e.g., “Wet Socks Pinot #2”) to disambiguate.
+- **Leaderboard Tie-Breaker:** Players with identical total scores share the same rank. Within that rank, they are ordered alphabetically by displayName. No extra playoff.
+- **Input Length & Sanitization:**
+    - Tasting notes: 10–300 characters, HTML stripped.
+    - Label/Fun names: 3–40 characters, no angle brackets or scripts.
+- **Host Reassignment:** If the host disconnects > 60 s, the earliest-joined active player is auto-promoted to host. Original host regains permissions on reconnect.
+- **Kicked Player Scoring:** A kicked player keeps points already earned but is excluded from unfinished rounds and Sommelier’s Gambit.
+- **Duplicate Label Check:** Label Names are case-insensitive unique; validation blocks duplicates.
+- **Round Integrity Check:** Server confirms every active player has a locked submission before calculating reveal. Missing submissions = 0 points and flagged in audit log.
+
+### **18. Future Roadmap (post‑MVP)**
+
+- Variable player & round counts.
+- Email results (SendGrid) + CSV export.
+- OAuth login for persistent profiles.
+- Team play mode (groups of 2‑4).
+- AI tasting‑note suggestions.
+
+---
+
+> Incremental Delivery – Revised Build Roadmap (Bug‑Minimized)
+> 
+
+> 
+> 
+
+> Phase 0 – Environment & Skeleton
+> 
+- Spin up Windsurf project, repo, linter, CI.
+
+> 
+> 
+
+> Phase 1 – Core Schema & Utilities
+> 
+1. Section **4. Data Model**
+2. Section **11. Randomization Algorithm**
+3. Section **10. Scoring Engine**
+
+> 
+> 
+
+> Phase 2 – State Machine & Security
+> 
+
+> 4. Section
+> 
+> 
+> **5. Game‑State Timeline**
+> 
+
+> 5. Section
+> 
+> 
+> **13. Security & Privacy**
+> 
+
+> 
+> 
+
+> Phase 3 – Admin & Permissions Backbone
+> 
+
+> 6. Section
+> 
+> 
+> **6. User Roles & Permissions**
+> 
+
+> 7. Section
+> 
+> 
+> **8. Admin Dashboard**
+> 
+
+> 
+> 
+
+> Phase 4 – Pre‑Game Flows
+> 
+
+> 8. Section
+> 
+> 
+> **7.1 Game Setup (Host)**
+> 
+
+> 9. Section
+> 
+> 
+> **7.2 Player Join & Lobby**
+> 
+
+> 
+> 
+
+> Phase 5 – Core Gameplay Loop
+> 
+
+> 10. Section
+> 
+> 
+> **7.3 Round Cycle Detail**
+> 
+
+> 11. Section
+> 
+> 
+> **7.4 Countdown & Reveal**
+> 
+
+> 12. Section
+> 
+> 
+> **6. Leaderboard Rules**
+> 
+
+> 
+> 
+
+> Phase 6 – Post‑Gameplay & Spectator
+> 
+
+> 13. Section
+> 
+> 
+> **7.5 Sommelier’s Gambit**
+> 
+
+> 14. Section
+> 
+> 
+> **7.6 Final Summary**
+> 
+
+> 15. Section
+> 
+> 
+> **9. Spectator Mode**
+> 
+
+> 
+> 
+
+> Phase 7 – Polish & Hardening
+> 
+
+> 16. Section
+> 
+> 
+> **12. UI / UX Style Guide**
+> 
+
+> 17. Section
+> 
+> 
+> **14. Error Handling & Edge Cases**
+> 
+
+> 18. Section
+> 
+> 
+> **15. Analytics**
+> 
+
+> 
+> 
+
+> Phase 8 – Future Enhancements
+> 
+
+> 19. Section
+> 
+> 
+> **16. Roadmap (out‑of‑scope for MVP)**
+> 
+
+> 
+> 
+
+> This order builds outward from immutable data & deterministic logic → security → admin control → player flows → UX polish. Each phase compiles and passes tests before progressing, minimizing cross‑module regression risk.
+>
