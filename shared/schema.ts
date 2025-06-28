@@ -1,0 +1,126 @@
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const games = pgTable("games", {
+  id: text("id").primaryKey(),
+  status: text("status").$type<'setup' | 'lobby' | 'in_round' | 'countdown' | 'reveal' | 'gambit' | 'final'>().notNull().default('setup'),
+  currentRound: integer("current_round").notNull().default(0),
+  hostToken: text("host_token").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const bottles = pgTable("bottles", {
+  id: text("id").primaryKey(),
+  gameId: text("game_id").notNull(),
+  labelName: text("label_name").notNull(),
+  funName: text("fun_name"),
+  price: integer("price").notNull(),
+  roundIndex: integer("round_index"),
+});
+
+export const players = pgTable("players", {
+  id: text("id").primaryKey(),
+  gameId: text("game_id").notNull(),
+  displayName: text("display_name").notNull(),
+  score: integer("score").notNull().default(0),
+  isHost: boolean("is_host").notNull().default(false),
+  status: text("status").$type<'active' | 'kicked' | 'spectator'>().notNull().default('active'),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rounds = pgTable("rounds", {
+  id: text("id").primaryKey(),
+  gameId: text("game_id").notNull(),
+  index: integer("index").notNull(),
+  bottleIds: jsonb("bottle_ids").$type<string[]>().notNull(),
+  revealed: boolean("revealed").notNull().default(false),
+});
+
+export const submissions = pgTable("submissions", {
+  id: text("id").primaryKey(),
+  playerId: text("player_id").notNull(),
+  gameId: text("game_id").notNull(),
+  roundIndex: integer("round_index").notNull(),
+  tastingNotes: jsonb("tasting_notes").$type<Record<string, string>>().notNull(),
+  ranking: jsonb("ranking").$type<string[]>().notNull(),
+  locked: boolean("locked").notNull().default(false),
+  points: integer("points").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const gambitSubmissions = pgTable("gambit_submissions", {
+  id: text("id").primaryKey(),
+  playerId: text("player_id").notNull(),
+  gameId: text("game_id").notNull(),
+  mostExpensive: text("most_expensive").notNull(),
+  leastExpensive: text("least_expensive").notNull(),
+  favorite: text("favorite").notNull(),
+  points: integer("points").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas
+export const insertGameSchema = createInsertSchema(games).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBottleSchema = createInsertSchema(bottles);
+
+export const insertPlayerSchema = createInsertSchema(players).omit({
+  createdAt: true,
+});
+
+export const insertRoundSchema = createInsertSchema(rounds);
+
+export const insertSubmissionSchema = createInsertSchema(submissions).omit({
+  createdAt: true,
+});
+
+export const insertGambitSubmissionSchema = createInsertSchema(gambitSubmissions).omit({
+  createdAt: true,
+});
+
+// Types
+export type Game = typeof games.$inferSelect;
+export type InsertGame = z.infer<typeof insertGameSchema>;
+export type Bottle = typeof bottles.$inferSelect;
+export type InsertBottle = z.infer<typeof insertBottleSchema>;
+export type Player = typeof players.$inferSelect;
+export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
+export type Round = typeof rounds.$inferSelect;
+export type InsertRound = z.infer<typeof insertRoundSchema>;
+export type Submission = typeof submissions.$inferSelect;
+export type InsertSubmission = z.infer<typeof insertSubmissionSchema>;
+export type GambitSubmission = typeof gambitSubmissions.$inferSelect;
+export type InsertGambitSubmission = z.infer<typeof insertGambitSubmissionSchema>;
+
+// Additional validation schemas
+export const createGameSchema = z.object({
+  hostDisplayName: z.string().min(3).max(15),
+});
+
+export const joinGameSchema = z.object({
+  displayName: z.string().min(3).max(15).optional(),
+});
+
+export const addBottlesSchema = z.object({
+  bottles: z.array(z.object({
+    labelName: z.string().min(3).max(20),
+    funName: z.string().max(40).optional(),
+    price: z.number().min(1),
+  })).length(20),
+});
+
+export const submitTastingSchema = z.object({
+  tastingNotes: z.record(z.string().min(10).max(300)),
+  ranking: z.array(z.string()).length(4),
+});
+
+export const submitGambitSchema = z.object({
+  mostExpensive: z.string(),
+  leastExpensive: z.string(),
+  favorite: z.string(),
+});

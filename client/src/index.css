@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 98%);
+  --foreground: hsl(34, 9%, 13%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(34, 9%, 13%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(34, 9%, 13%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(346, 77%, 49%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(34, 9%, 13%);
+  --radius: 0.5rem;
+
+  /* Wine theme colors */
+  --wine: hsl(346, 77%, 26%);
+  --rose: hsl(338, 56%, 87%);
+  --gold: hsl(45, 69%, 92%);
+  --sage: hsl(86, 20%, 82%);
+  --charcoal: hsl(0, 0%, 13%);
+  --warm-white: hsl(0, 0%, 98%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(346, 77%, 49%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .wine-gradient {
+    background: linear-gradient(135deg, hsl(346, 77%, 26%) 0%, hsl(346, 77%, 35%) 100%);
+  }
+  
+  .gold-gradient {
+    background: linear-gradient(135deg, hsl(45, 69%, 92%) 0%, hsl(45, 69%, 82%) 100%);
+  }
+  
+  .rose-gradient {
+    background: linear-gradient(135deg, hsl(338, 56%, 87%) 0%, hsl(338, 56%, 77%) 100%);
+  }
+  
+  .fade-slide-in {
+    animation: fadeSlideIn 150ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .bounce-gentle {
+    animation: bounceGentle 2s infinite;
+  }
+  
+  .drag-over {
+    border: 2px dashed hsl(346, 77%, 26%) !important;
+    background-color: hsl(338, 56%, 87%, 0.2) !important;
+  }
+}
+
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
