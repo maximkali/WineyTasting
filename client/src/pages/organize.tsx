@@ -3,11 +3,10 @@ import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DragEndEvent, DndContext, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, X } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,47 +21,16 @@ interface Wine {
   originalIndex?: number;
 }
 
-interface SortableWineProps {
+interface WineTileProps {
   wine: Wine;
   index: number;
-  othersDragging?: boolean;
+  onRemove?: () => void;
 }
 
-function SortableWine({ wine, index, othersDragging = false }: SortableWineProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: wine.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const isCurrentlyDragging = isDragging;
-  const shouldDisable = othersDragging && !isCurrentlyDragging;
-
+function WineTile({ wine, index, onRemove }: WineTileProps) {
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-white border rounded-lg touch-manipulation w-full shadow-sm hover:shadow-md transition-all duration-200 ${
-        isCurrentlyDragging ? "shadow-lg opacity-50 z-50" : ""
-      } ${
-        shouldDisable ? "opacity-30 pointer-events-none" : ""
-      }`}
-    >
-      <div
-        {...attributes}
-        {...(shouldDisable ? {} : listeners)}
-        className={`w-full h-full flex items-center gap-3 p-3 ${
-          shouldDisable ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
-        }`}
-      >
+    <div className="bg-white border rounded-lg w-full shadow-sm hover:shadow-md transition-shadow">
+      <div className="w-full h-full flex items-center gap-3 p-3">
         {/* Avatar on the left */}
         <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
           {String.fromCharCode(65 + (wine.originalIndex ?? index))}
@@ -80,62 +48,107 @@ function SortableWine({ wine, index, othersDragging = false }: SortableWineProps
           )}
         </div>
         
-        {/* Price and drag handle on the right */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Price and remove button on the right */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-sm font-bold text-wine">${wine.price}</span>
-          <GripVertical className="h-3 w-3 text-gray-400" />
+          {onRemove && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              className="h-6 w-6 p-0 hover:bg-red-100"
+            >
+              <X className="h-3 w-3 text-red-600" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-interface AvailableWinesCardProps {
-  wines: Wine[];
-  isDragging?: boolean;
+interface WineSelectionModalProps {
+  availableWines: Wine[];
+  onSelectWines: (wineIds: string[]) => void;
+  maxSelections: number;
+  roundNumber: number;
 }
 
-function AvailableWinesCard({ wines, isDragging = false }: AvailableWinesCardProps) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: 'unassigned',
-  });
-  
-  const style = {
-    backgroundColor: isOver ? 'rgba(34, 197, 94, 0.1)' : undefined,
+function WineSelectionModal({ availableWines, onSelectWines, maxSelections, roundNumber }: WineSelectionModalProps) {
+  const [selectedWineIds, setSelectedWineIds] = useState<string[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleWineToggle = (wineId: string) => {
+    setSelectedWineIds(prev => {
+      if (prev.includes(wineId)) {
+        return prev.filter(id => id !== wineId);
+      } else if (prev.length < maxSelections) {
+        return [...prev, wineId];
+      }
+      return prev;
+    });
   };
-  
+
+  const handleDone = () => {
+    onSelectWines(selectedWineIds);
+    setSelectedWineIds([]);
+    setIsOpen(false);
+  };
+
+  const handleCancel = () => {
+    setSelectedWineIds([]);
+    setIsOpen(false);
+  };
+
   return (
-    <Card 
-      ref={setNodeRef}
-      className={`transition-colors ${isOver ? 'border-green-500 bg-green-50' : ''} min-h-[300px]`}
-      style={style}
-    >
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
-          <span>Available Wines</span>
-          <Badge variant="secondary">
-            {wines.length} remaining
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1">
-        <SortableContext 
-          items={wines.map(w => w.id)}
-          strategy={rectSortingStrategy}
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full h-24 border-2 border-dashed border-gray-300 hover:border-gray-400 flex flex-col items-center justify-center gap-2"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[200px]">
-            {wines.map((wine, index) => (
-              <SortableWine key={wine.id} wine={wine} index={index} othersDragging={isDragging} />
-            ))}
-            {wines.length === 0 && (
-              <div className="col-span-full text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                All wines assigned to rounds
-              </div>
-            )}
+          <Plus className="h-6 w-6 text-gray-400" />
+          <span className="text-sm text-gray-600">Add wines to Round {roundNumber + 1}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Select wines for Round {roundNumber + 1} (max {maxSelections})</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <ScrollArea className="h-96 w-full border rounded-md p-4">
+            <div className="space-y-3">
+              {availableWines.map((wine, index) => (
+                <div key={wine.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50">
+                  <Checkbox
+                    id={wine.id}
+                    checked={selectedWineIds.includes(wine.id)}
+                    onCheckedChange={() => handleWineToggle(wine.id)}
+                    disabled={!selectedWineIds.includes(wine.id) && selectedWineIds.length >= maxSelections}
+                  />
+                  <div className="flex-1">
+                    <WineTile wine={wine} index={index} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              {selectedWineIds.length} of {maxSelections} selected
+            </span>
+            <div className="space-x-2">
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handleDone} disabled={selectedWineIds.length === 0}>
+                Done
+              </Button>
+            </div>
           </div>
-        </SortableContext>
-      </CardContent>
-    </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -143,287 +156,289 @@ interface RoundCardProps {
   round: number;
   wines: Wine[];
   bottlesPerRound: number;
-  isDragging?: boolean;
+  availableWines: Wine[];
+  onAddWines: (roundIndex: number, wineIds: string[]) => void;
+  onRemoveWine: (roundIndex: number, wineId: string) => void;
 }
 
-function RoundCard({ round, wines, bottlesPerRound, isDragging = false }: RoundCardProps) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `round-${round}`,
-  });
-  
-  const style = {
-    backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : undefined,
-  };
-  
+function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, onRemoveWine }: RoundCardProps) {
+  const canAddMore = wines.length < bottlesPerRound;
+  const maxNewSelections = bottlesPerRound - wines.length;
+
   return (
-    <Card 
-      ref={setNodeRef}
-      className={`min-h-[350px] transition-colors ${isOver ? 'border-blue-500 bg-blue-50' : ''} flex flex-col`}
-      style={style}
-    >
+    <Card className="h-fit">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
-          <span>Round {round + 1}</span>
-          <Badge variant={wines.length === bottlesPerRound ? "default" : "secondary"} className="text-xs">
+        <CardTitle className="text-lg flex items-center gap-2">
+          Round {round + 1}
+          <Badge variant="secondary" className="text-xs">
             {wines.length}/{bottlesPerRound}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 min-h-[300px] flex flex-col">
+      <CardContent className="space-y-3">
         {/* Wine tiles */}
-        {wines.length > 0 && (
-          <div className="space-y-2">
-            <SortableContext 
-              items={wines.map(w => w.id)}
-              strategy={rectSortingStrategy}
-            >
-              <div className="space-y-2">
-                {wines.map((wine, index) => (
-                  <SortableWine key={wine.id} wine={wine} index={index} othersDragging={isDragging} />
-                ))}
-              </div>
-            </SortableContext>
+        {wines.map((wine, index) => (
+          <WineTile
+            key={wine.id}
+            wine={wine}
+            index={index}
+            onRemove={() => onRemoveWine(round, wine.id)}
+          />
+        ))}
+        
+        {/* Add wine button */}
+        {canAddMore && availableWines.length > 0 && (
+          <WineSelectionModal
+            availableWines={availableWines}
+            onSelectWines={(wineIds) => onAddWines(round, wineIds)}
+            maxSelections={maxNewSelections}
+            roundNumber={round}
+          />
+        )}
+        
+        {/* Full round message */}
+        {!canAddMore && (
+          <div className="text-center text-sm text-gray-500 py-4">
+            Round is full
           </div>
         )}
         
-        {/* Empty state message when no wines */}
-        {wines.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-            Drop wines anywhere in this card
+        {/* No available wines message */}
+        {canAddMore && availableWines.length === 0 && (
+          <div className="text-center text-sm text-gray-500 py-4">
+            No wines available
           </div>
         )}
-        
-        {/* Fill remaining space to make entire card droppable */}
-        <div className="flex-1"></div>
       </CardContent>
     </Card>
   );
 }
 
 export default function Organize() {
-  const { gameId } = useParams();
+  const { gameId } = useParams<{ gameId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const hostToken = sessionStorage.getItem(`hostToken_${gameId}`);
+  // Get host token from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const hostToken = searchParams.get('hostToken');
+
+  // Game data using the hook
+  const { data: gameData, isLoading, isError } = useGame(gameId!);
   
-  useEffect(() => {
-    if (!hostToken) {
-      navigate("/");
-    }
-  }, [hostToken, navigate]);
-
-  if (!hostToken) {
-    return null;
-  }
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
-
-  // Fetch game data
-  const { data: gameData, isLoading, error } = useGame(gameId!) as {
-    data: {
-      game: any;
-      bottles: Wine[];
-      players: any[];
-      rounds: any[];
-    } | undefined;
-    isLoading: boolean;
-    error: any;
-  };
-
+  const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
-  const [unassignedWines, setUnassignedWines] = useState<Wine[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
 
-  // Initialize rounds when game data is available
+  // Update wines state when game data changes
   useEffect(() => {
-    console.log("Full game data:", gameData);
-    
-    if (gameData?.bottles && Array.isArray(gameData.bottles)) {
-      const totalRounds = gameData.game.totalRounds || 5;
+    if (gameData?.bottles) {
+      console.log("Setting up", gameData.game.totalRounds, "rounds with", gameData.bottles.length, "bottles");
       
-      console.log("Setting up", totalRounds, "rounds with", gameData.bottles.length, "bottles");
-      
-      // Initialize empty rounds
-      const emptyRounds = Array(totalRounds).fill(null).map(() => []);
-      setRounds(emptyRounds);
-      
-      // Set all bottles as unassigned initially, with original index
-      const winesWithIndex = gameData.bottles.map((bottle: any, index: number) => ({
-        ...bottle,
+      const wineData: Wine[] = gameData.bottles.map((bottle: any, index: number) => ({
+        id: bottle.id,
+        labelName: bottle.labelName,
+        funName: bottle.funName,
+        price: bottle.price,
         originalIndex: index
       }));
-      setUnassignedWines(winesWithIndex);
-    } else {
-      console.log("No bottles found in game data", gameData);
+      
+      setWines(wineData);
+      
+      // Initialize rounds based on existing assignments
+      const newRounds: Wine[][] = Array(gameData.game.totalRounds).fill(null).map(() => []);
+      
+      // Organize wines into rounds based on their roundIndex
+      wineData.forEach(wine => {
+        const bottle = gameData.bottles.find((b: any) => b.id === wine.id);
+        if (bottle && bottle.roundIndex !== null && bottle.roundIndex >= 0) {
+          if (newRounds[bottle.roundIndex]) {
+            newRounds[bottle.roundIndex].push(wine);
+          }
+        }
+      });
+      
+      setRounds(newRounds);
     }
   }, [gameData]);
 
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
+  // Calculate unassigned wines
+  const assignedWineIds = new Set(rounds.flat().map(w => w.id));
+  const unassignedWines = wines.filter(w => !assignedWineIds.has(w.id));
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    setIsDragging(false);
-    
-    if (!over || active.id === over.id) return;
-
-    const wineId = active.id as string;
-    const wine = [...unassignedWines, ...rounds.flat()].find(w => w.id === wineId);
-    if (!wine) return;
-
-    // Remove wine from current location
-    const newUnassignedWines = unassignedWines.filter(w => w.id !== wineId);
-    const newRounds = rounds.map(round => round.filter(w => w.id !== wineId));
-
-    // Determine destination
-    if (over.id === "unassigned") {
-      // Moving to unassigned
-      setUnassignedWines([...newUnassignedWines, wine]);
-      setRounds(newRounds);
-    } else if (over.id.toString().startsWith("round-")) {
-      // Moving to a round
-      const roundIndex = parseInt(over.id.toString().replace("round-", ""));
-      const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
-      
-      if (newRounds[roundIndex].length < bottlesPerRound) {
-        newRounds[roundIndex] = [...newRounds[roundIndex], wine];
-        setUnassignedWines(newUnassignedWines);
-        setRounds(newRounds);
-      } else {
-        // Round is full, show toast
-        toast({
-          title: "Round Full",
-          description: `Round ${roundIndex + 1} already has ${bottlesPerRound} wines.`,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const finalizeMutation = useMutation({
-    mutationFn: async () => {
-      // Create rounds data structure
-      const roundsData = rounds.map((roundWines, index) => ({
-        index,
-        bottles: roundWines.map(wine => wine.id),
-      }));
-
-      const response = await apiRequest("POST", `/api/games/${gameId}/rounds`, {
-        rounds: roundsData,
-      }, {
-        headers: { Authorization: `Bearer ${hostToken}` },
+  // Mutation to save bottle assignments
+  const updateBottlesMutation = useMutation({
+    mutationFn: async (roundData: { roundIndex: number; bottleIds: string[] }[]) => {
+      const result = await apiRequest(`/api/games/${gameId}/bottles/organize`, {
+        method: "POST",
+        body: JSON.stringify({ rounds: roundData }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${hostToken}`
+        }
       });
-
-      return response;
+      return result;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
       toast({
-        title: "Success!",
-        description: "Rounds finalized and game started.",
+        title: "Bottles organized successfully",
+        description: "Wine assignments have been saved.",
       });
-      navigate(`/lobby/${gameId}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/games", gameId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to finalize rounds",
+        title: "Error organizing bottles",
+        description: error.message || "Failed to save wine assignments.",
         variant: "destructive",
       });
     },
   });
 
-  const handleFinalize = () => {
-    // Check if all wines are assigned
-    if (unassignedWines.length > 0) {
-      toast({
-        title: "Incomplete Setup",
-        description: `Please assign all ${unassignedWines.length} remaining wines to rounds.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if all rounds have the correct number of bottles
-    const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
-    const incompleteRounds = rounds.filter(round => round.length !== bottlesPerRound);
-    if (incompleteRounds.length > 0) {
-      toast({
-        title: "Incomplete Rounds",
-        description: `Each round must have exactly ${bottlesPerRound} wines.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    finalizeMutation.mutate();
+  const handleAddWinesToRound = (roundIndex: number, wineIds: string[]) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      const winesToAdd = wines.filter(w => wineIds.includes(w.id));
+      newRounds[roundIndex] = [...newRounds[roundIndex], ...winesToAdd];
+      return newRounds;
+    });
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
-  }
+  const handleRemoveWineFromRound = (roundIndex: number, wineId: string) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      newRounds[roundIndex] = newRounds[roundIndex].filter(w => w.id !== wineId);
+      return newRounds;
+    });
+  };
 
-  if (error || !gameData?.game) {
-    return <div className="flex justify-center items-center min-h-screen">Game not found</div>;
-  }
+  const handleSaveOrganization = async () => {
+    const roundData = rounds.map((roundWines, roundIndex) => ({
+      roundIndex,
+      bottleIds: roundWines.map(w => w.id)
+    }));
 
-  const totalRounds = gameData.game.totalRounds || 5;
-  const bottlesPerRound = gameData.game.bottlesPerRound || 4;
+    updateBottlesMutation.mutate(roundData);
+  };
+
+  const handleStartGame = async () => {
+    try {
+      await apiRequest(`/api/games/${gameId}/start`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${hostToken}`
+        }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
+      toast({
+        title: "Game started!",
+        description: "Players can now join the lobby.",
+      });
+      
+      navigate(`/lobby/${gameId}?hostToken=${hostToken}`);
+    } catch (error: any) {
+      toast({
+        title: "Error starting game",
+        description: error.message || "Failed to start the game.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading game data</div>;
+  if (!gameData) return <div>Game not found</div>;
+
+  const { game } = gameData;
+  const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
+  const allBottlesAssigned = totalAssigned === wines.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Organize Wine Rounds</h1>
-          <p className="text-gray-600 text-sm md:text-base">
-            Drag and drop wines to organize them into {totalRounds} rounds of {bottlesPerRound} wines each
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Organize Wines into Rounds
+          </h1>
+          <p className="text-gray-600">
+            Assign your {wines.length} wines to {game.totalRounds} rounds ({game.bottlesPerRound} wines per round)
           </p>
         </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          {/* Available Wines - Horizontal layout at top */}
-          <AvailableWinesCard wines={unassignedWines} isDragging={isDragging} />
+        {/* Progress indicator */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium">Progress</p>
+                <p className="text-xs text-gray-600">
+                  {totalAssigned} of {wines.length} wines assigned
+                </p>
+              </div>
+              <Badge variant={allBottlesAssigned ? "default" : "secondary"}>
+                {allBottlesAssigned ? "Complete" : "In Progress"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Rounds */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rounds.map((roundWines, roundIndex) => (
-              <RoundCard
-                key={roundIndex}
-                round={roundIndex}
-                wines={roundWines}
-                bottlesPerRound={bottlesPerRound}
-                isDragging={isDragging}
-              />
-            ))}
-          </div>
+        {/* Rounds grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {rounds.map((roundWines, roundIndex) => (
+            <RoundCard
+              key={roundIndex}
+              round={roundIndex}
+              wines={roundWines}
+              bottlesPerRound={game.bottlesPerRound}
+              availableWines={unassignedWines}
+              onAddWines={handleAddWinesToRound}
+              onRemoveWine={handleRemoveWineFromRound}
+            />
+          ))}
+        </div>
 
-          <div className="text-center pt-6">
-            <Button
-              onClick={handleFinalize}
-              disabled={finalizeMutation.isPending}
-              size="lg"
-              className="px-8 py-3"
-            >
-              {finalizeMutation.isPending ? "Finalizing..." : "🎯 Finalize Rounds & Start Game"}
-            </Button>
-          </div>
-        </DndContext>
+        {/* Unassigned wines */}
+        {unassignedWines.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Unassigned Wines
+                <Badge variant="outline">
+                  {unassignedWines.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {unassignedWines.map((wine, index) => (
+                  <WineTile key={wine.id} wine={wine} index={index} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-4 justify-center">
+          <Button
+            onClick={handleSaveOrganization}
+            disabled={updateBottlesMutation.isPending}
+            variant="outline"
+          >
+            {updateBottlesMutation.isPending ? "Saving..." : "Save Organization"}
+          </Button>
+          
+          <Button
+            onClick={handleStartGame}
+            disabled={!allBottlesAssigned}
+            className="bg-wine hover:bg-wine/90"
+          >
+            Start Game
+          </Button>
+        </div>
       </div>
     </div>
   );
