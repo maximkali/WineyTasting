@@ -14,7 +14,7 @@ export default function Home() {
           
           {/* Hero section */}
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Think you can taste a difference?</h1>
+            <h1 className="md:text-5xl font-bold text-gray-900 text-[42px]">Think you can taste a difference?</h1>
             <p className="text-xl text-gray-600 leading-relaxed">
               Create a blind wine tasting experience for your friends. 
               Guess, rank, and discover who has the best wine knowledge.
