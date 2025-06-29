@@ -28,7 +28,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <Button
               onClick={() => setLocation('/setup')}
-              className="bg-red-600 hover:bg-red-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
+              className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
             >
               Host a Tasting
             </Button>
