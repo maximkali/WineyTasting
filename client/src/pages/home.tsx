@@ -128,6 +128,13 @@ export default function Home() {
 
         </div>
       </div>
+      
+      {/* Wine emojis at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 text-center py-4 text-4xl pointer-events-none">
+        <div className="flex justify-center space-x-4">
+          🍷 🍾 🥂 🍇 🍷 🍾 🥂 🍇
+        </div>
+      </div>
     </div>
   );
 }
