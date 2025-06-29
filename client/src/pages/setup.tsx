@@ -353,18 +353,18 @@ export default function Setup() {
               <div className="space-y-4 pt-4 border-t">
                 <h2 className="text-lg font-semibold">Tasting Details</h2>
                 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white border rounded-lg p-4 text-center">
+                    <div className="text-sm font-medium uppercase text-muted-foreground mb-2">
                       Tastings per Round:
                     </div>
-                    <div className="text-2xl font-bold">{selectedConfig.bottlesPerRound} wines</div>
+                    <div className="text-2xl font-bold text-wine">{selectedConfig.bottlesPerRound} wines</div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
+                  <div className="bg-white border rounded-lg p-4 text-center">
+                    <div className="text-sm font-medium uppercase text-muted-foreground mb-2">
                       Pour per Tasting:
                     </div>
-                    <div className="text-2xl font-bold">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
+                    <div className="text-2xl font-bold text-wine">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
                   </div>
                 </div>
 
