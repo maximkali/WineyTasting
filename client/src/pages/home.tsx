@@ -8,7 +8,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
-      
       {/* Main content area */}
       <div className="flex flex-col items-center justify-center px-4 py-24">
         <div className="text-center max-w-2xl mx-auto space-y-12">
@@ -42,9 +41,7 @@ export default function Home() {
                 }
               }}
               className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
-            >
-              Join Game
-            </Button>
+            >Join a Game</Button>
           </div>
 
           {/* Feature highlights */}
@@ -72,7 +69,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
       {/* Bottom emoji navigation */}
       <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2">
         <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border">
