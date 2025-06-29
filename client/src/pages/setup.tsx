@@ -276,7 +276,7 @@ export default function Setup() {
           </Button>
         </div>
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Set up your tasting adventure!</h1>
+          <h1 className="text-2xl font-bold">Hey {gameData?.players?.find(p => p.isHost)?.displayName?.split(' ')[0] || 'there'} – let's design your tasting!</h1>
           <p className="text-muted-foreground">Complete the basic settings below to get started. Then, add each wine's details – we'll need the label name, a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.</p>
         </div>
 
