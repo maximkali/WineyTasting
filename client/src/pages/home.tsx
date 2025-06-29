@@ -19,9 +19,18 @@ export default function Home() {
       return res.json();
     },
     onSuccess: (data) => {
+      console.log("Game created successfully:", data);
       sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
       sessionStorage.setItem(`playerId_${data.game.id}`, data.playerId);
+      console.log("Navigating to:", `/setup/${data.game.id}`);
+      
+      // Try multiple navigation methods
       setLocation(`/setup/${data.game.id}`);
+      
+      // Fallback navigation
+      setTimeout(() => {
+        window.location.href = `/setup/${data.game.id}`;
+      }, 100);
     },
     onError: () => {
       toast({
