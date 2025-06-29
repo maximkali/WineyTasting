@@ -28,22 +28,22 @@ interface WineTileProps {
 
 function WineTile({ wine, index, onRemove }: WineTileProps) {
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-3 px-1">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-wine-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-          {index + 1}
+        <div className="w-7 h-7 bg-wine-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+          {String.fromCharCode(65 + index)}
         </div>
-        <div>
-          <p className="font-medium text-gray-900 text-sm">{wine.funName || wine.labelName}</p>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">{wine.funName || wine.labelName}</p>
           <p className="text-xs text-gray-500">{wine.labelName}</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-gray-700">${wine.price}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-gray-900">${wine.price.toFixed(0)}</span>
         {onRemove && (
           <button
             onClick={onRemove}
-            className="text-gray-400 hover:text-red-600 transition-colors"
+            className="text-gray-400 hover:text-red-500 transition-colors p-1"
           >
             <X className="h-4 w-4" />
           </button>
@@ -126,10 +126,10 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full bg-gradient-to-r from-wine-50 to-wine-100 hover:from-wine-100 hover:to-wine-200 text-wine-700 border-wine-300 hover:border-wine-400 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
+                  className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Wines ({remainingSlots} slot{remainingSlots !== 1 ? 's' : ''})
+                  Add Wines
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -465,12 +465,30 @@ export default function Rounds() {
           ))}
         </div>
 
-        {/* Status message */}
+        {/* Unassigned wines */}
         {unassignedWines.length > 0 && (
-          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-orange-800 font-medium">
-              {unassignedWines.length} wine{unassignedWines.length !== 1 ? 's' : ''} still need to be assigned to rounds.
-            </p>
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Unassigned Wines ({unassignedWines.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {unassignedWines.map((wine, index) => (
+                <Card key={wine.id} className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                      ?
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {wine.funName || wine.labelName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">{wine.labelName}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">${wine.price}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
 
