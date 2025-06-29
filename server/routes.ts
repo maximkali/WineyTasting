@@ -318,6 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hostToken = req.headers.authorization?.replace('Bearer ', '');
       
       const game = await storage.getGame(gameId);
+      console.log(`[DEBUG] Organize auth - gameId: ${gameId} hostToken: ${hostToken?.substring(0, 10)}... game.hostToken: ${game?.hostToken?.substring(0, 10)}...`);
       if (!game || game.hostToken !== hostToken) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
