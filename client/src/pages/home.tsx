@@ -25,8 +25,8 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <Button
               onClick={() => {
-                console.log("Host a Tasting clicked - navigating to setup-simple");
-                setLocation("/setup-simple");
+                console.log("Host a Tasting clicked - navigating to setup");
+                setLocation("/setup");
               }}
               className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
             >
