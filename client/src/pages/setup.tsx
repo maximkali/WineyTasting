@@ -425,15 +425,9 @@ export default function Setup() {
       </div>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wine className="h-5 w-5" />
-              <CardTitle>Wine Entry</CardTitle>
-            </div>
-            <Button onClick={resetConfiguration} variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Change Config
-            </Button>
+          <div className="flex items-center gap-2">
+            <Wine className="h-5 w-5" />
+            <CardTitle>Wine Entry</CardTitle>
           </div>
           {selectedConfig && (
             <div className="flex gap-2 flex-wrap">
