@@ -633,7 +633,7 @@ export default function Setup() {
             {canRandomize && (
               <>
                 <Button 
-                  onClick={() => setLocation(`/organize/${gameId}`)}
+                  onClick={() => setLocation(`/rounds/${gameId}`)}
                   variant="outline"
                   className="flex-1"
                 >
