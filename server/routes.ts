@@ -195,6 +195,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Game already started' });
       }
       
+      // Check if bottles already exist for this game
+      const existingBottles = await storage.getBottlesByGame(gameId);
+      if (existingBottles.length > 0) {
+        return res.status(400).json({ 
+          error: 'Bottles already exist for this game. Please use PUT endpoint to update them.' 
+        });
+      }
+      
       // Check for unique prices
       const prices = bottleData.map(b => b.price);
       if (new Set(prices).size !== prices.length) {
@@ -243,6 +251,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[DEBUG] Error fetching bottles:', error);
       res.status(500).json({ error: 'Failed to fetch bottles' });
+    }
+  });
+
+  // Update (replace) all bottles for a game
+  app.put("/api/games/:gameId/bottles", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const { bottles: bottleData } = addBottlesSchema.parse(req.body);
+      const hostToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      const game = await storage.getGame(gameId);
+      if (!game || game.hostToken !== hostToken) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      if (game.status !== 'setup') {
+        return res.status(400).json({ error: 'Game already started' });
+      }
+      
+      // Check for unique prices
+      const prices = bottleData.map(b => b.price);
+      if (new Set(prices).size !== prices.length) {
+        return res.status(400).json({ error: 'All wine prices must be unique' });
+      }
+      
+      // Check for unique label names (case insensitive)
+      const labelNames = bottleData.map(b => b.labelName.toLowerCase());
+      if (new Set(labelNames).size !== labelNames.length) {
+        return res.status(400).json({ error: 'All label names must be unique' });
+      }
+      
+      // Delete existing bottles
+      const existingBottles = await storage.getBottlesByGame(gameId);
+      for (const bottle of existingBottles) {
+        await storage.deleteBottle(bottle.id);
+      }
+      
+      // Create new bottles
+      const bottles = bottleData.map(bottle => ({
+        id: generateId(),
+        gameId,
+        labelName: bottle.labelName,
+        funName: bottle.funName || null,
+        price: Math.round(bottle.price * 100), // Convert to cents
+        roundIndex: null,
+      }));
+      
+      await storage.createBottles(bottles);
+      
+      res.json({ bottles });
+    } catch (error) {
+      console.error('[DEBUG] Error updating bottles:', error);
+      res.status(500).json({ error: 'Failed to update bottles' });
     }
   });
 

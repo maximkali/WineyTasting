@@ -272,10 +272,11 @@ export default function Organize() {
   
   const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Update wines state when bottles data changes
+  // Update wines state when bottles data changes - but only if we don't have unsaved changes
   useEffect(() => {
-    if (bottlesData?.bottles && gameData?.game) {
+    if (bottlesData?.bottles && gameData?.game && !hasUnsavedChanges) {
       console.log("Setting up", gameData.game.totalRounds, "rounds with", bottlesData.bottles.length, "bottles");
       
       const wineData: Wine[] = bottlesData.bottles.map((bottle: any, index: number) => ({
@@ -303,7 +304,7 @@ export default function Organize() {
       
       setRounds(newRounds);
     }
-  }, [bottlesData, gameData]);
+  }, [bottlesData, gameData, hasUnsavedChanges]);
 
   // Calculate unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
@@ -404,33 +405,13 @@ export default function Organize() {
     },
   });
 
-  // Auto-save functionality
+  // Track unsaved changes
   useEffect(() => {
-    const saveTimeout = setTimeout(() => {
-      const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
-      if (totalAssigned > 0 && gameData?.game?.id) {
-        // Auto-save current state
-        const roundData = rounds.map((roundWines, roundIndex) => ({
-          roundIndex,
-          bottleIds: roundWines.map(w => w.id)
-        }));
-        
-        // Silent save (no toast notifications for auto-save)
-        fetch(`/api/games/${gameData.game.id}/bottles/organize`, {
-          method: "POST",
-          body: JSON.stringify({ rounds: roundData }),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${hostToken}`
-          }
-        }).catch(() => {
-          // Silent failure for auto-save
-        });
-      }
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(saveTimeout);
-  }, [rounds, gameData?.game?.id, hostToken]);
+    const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
+    if (totalAssigned > 0) {
+      setHasUnsavedChanges(true);
+    }
+  }, [rounds]);
 
   const handleAddWinesToRound = (roundIndex: number, wineIds: string[]) => {
     setRounds(prev => {

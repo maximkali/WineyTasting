@@ -17,6 +17,7 @@ export interface IStorage {
   createBottles(bottles: InsertBottle[]): Promise<Bottle[]>;
   getBottlesByGame(gameId: string): Promise<Bottle[]>;
   updateBottle(id: string, updates: Partial<Bottle>): Promise<Bottle | undefined>;
+  deleteBottle(id: string): Promise<void>;
   
   // Players
   createPlayer(player: InsertPlayer): Promise<Player>;
@@ -79,6 +80,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bottles.id, id))
       .returning();
     return updatedBottle || undefined;
+  }
+
+  async deleteBottle(id: string): Promise<void> {
+    await db.delete(bottles).where(eq(bottles.id, id));
   }
 
   // Players

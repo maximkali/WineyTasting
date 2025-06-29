@@ -118,11 +118,17 @@ export default function Setup() {
             price: (bottle.price / 100).toString() // Convert from cents back to dollars
           }));
           setBottles(existingBottles);
-          setConfigurationStep('wines');
+          
+          // Check if we should show wines page (when coming back from organize)
+          const savedStep = sessionStorage.getItem(`game-${gameId}-configStep`);
+          if (savedStep === 'wine') {
+            setConfigurationStep('wines');
+            sessionStorage.removeItem(`game-${gameId}-configStep`); // Clean up
+          }
         }
       }
     }
-  }, [gameData, bottlesData]);
+  }, [gameData, bottlesData, gameId]);
 
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
@@ -158,9 +164,13 @@ export default function Setup() {
   });
 
   const addBottlesMutation = useMutation({
-    mutationFn: async (bottlesData: any[]) => {
-      const res = await apiRequest("POST", `/api/games/${gameId}/bottles`, {
-        bottles: bottlesData,
+    mutationFn: async (newBottlesData: any[]) => {
+      // Check if bottles already exist in database to determine POST vs PUT
+      const hasExistingBottles = bottlesData?.bottles && bottlesData.bottles.length > 0;
+      const method = hasExistingBottles ? "PUT" : "POST";
+      
+      const res = await apiRequest(method, `/api/games/${gameId}/bottles`, {
+        bottles: newBottlesData,
       }, {
         headers: { Authorization: `Bearer ${hostToken}` },
       });
@@ -168,9 +178,10 @@ export default function Setup() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
       toast({
         title: "Success",
-        description: "Wines locked! Now organize them into rounds.",
+        description: "Wines saved successfully! Now organize them into rounds.",
       });
       setLocation(`/organize/${gameId}`);
     },
