@@ -524,7 +524,7 @@ export default function Rounds() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                navigate(`/setup/${gameId}`);
+                navigate(`/wine-list/${gameId}`);
               }}
               className="flex items-center gap-2"
             >

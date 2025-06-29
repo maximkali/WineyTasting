@@ -68,13 +68,8 @@ export default function WineList() {
         gameId: gameId!
       }));
 
-      return apiRequest('/api/games/' + gameId + '/bottles', {
-        method: 'PUT',
-        body: JSON.stringify({ bottles }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${hostToken}`
-        }
+      return apiRequest('PUT', `/api/games/${gameId}/bottles`, { bottles }, {
+        'Authorization': `Bearer ${hostToken}`
       });
     },
     onSuccess: () => {
