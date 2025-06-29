@@ -92,13 +92,21 @@ export default function Setup() {
     }
   }, [selectedConfig]);
 
-  // Effect to load existing bottles and configuration when returning from organize page
+  // Effect to load existing bottles and configuration
   useEffect(() => {
+    console.log('[DEBUG] Setup page loading - gameData:', gameData, 'bottlesData:', bottlesData);
+    
     if (gameData?.game && bottlesData?.bottles) {
       const game = gameData.game;
       
       // Set configuration from game data
       if (game.totalBottles && game.maxPlayers && game.totalRounds && game.bottlesPerRound) {
+        console.log('[DEBUG] Loading game config:', { 
+          players: game.maxPlayers, 
+          bottles: game.totalBottles,
+          bottlesCount: bottlesData.bottles.length 
+        });
+        
         setSelectedPlayers(game.maxPlayers);
         setSelectedBottles(game.totalBottles);
         setSelectedConfig({
@@ -112,23 +120,19 @@ export default function Setup() {
         
         // Load existing bottles data
         if (bottlesData.bottles.length > 0) {
+          console.log('[DEBUG] Loading existing bottles:', bottlesData.bottles.length);
           const existingBottles = bottlesData.bottles.map((bottle: any) => ({
             labelName: bottle.labelName || "",
             funName: bottle.funName || "",
             price: (bottle.price / 100).toString() // Convert from cents back to dollars
           }));
           setBottles(existingBottles);
-          
-          // Check if we should show wines page (when coming back from organize)
-          const savedStep = sessionStorage.getItem(`game-${gameId}-configStep`);
-          if (savedStep === 'wine') {
-            setConfigurationStep('wines');
-            sessionStorage.removeItem(`game-${gameId}-configStep`); // Clean up
-          }
+          // Always show wine entry form when bottles exist
+          setConfigurationStep('wines');
         }
       }
     }
-  }, [gameData, bottlesData, gameId]);
+  }, [gameData, bottlesData]);
 
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
@@ -363,10 +367,7 @@ export default function Setup() {
 
   const resetConfiguration = () => {
     setConfigurationStep('config');
-    setSelectedPlayers(null);
-    setSelectedBottles(null);
-    setSelectedConfig(null);
-    setBottles([]);
+    // Don't clear the data when going back - preserve existing entries
   };
 
   if (configurationStep === 'config') {

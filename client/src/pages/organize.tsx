@@ -530,8 +530,6 @@ export default function Organize() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                // Set the configuration step to 'wine' to show the wine list
-                sessionStorage.setItem(`game-${gameId}-configStep`, 'wine');
                 navigate(`/setup/${gameId}`);
               }}
               className="flex items-center gap-2"
