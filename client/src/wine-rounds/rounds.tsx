@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
+import { Badge } from "@/common/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/common/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/common/ui/alert-dialog";
+import { Checkbox } from "@/common/ui/checkbox";
+import { ScrollArea } from "@/common/ui/scroll-area";
 import { Plus, X, ArrowLeft } from "lucide-react";
-import WineyHeader from "@/components/winey-header";
+import WineyHeader from "@/common/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useGame } from "@/hooks/use-game";
+import { apiRequest } from "@/common/lib/queryClient";
+import { useToast } from "@/common/hooks/use-toast";
+import { useGame } from "@/common/hooks/use-game";
 
 interface Wine {
   id: string;

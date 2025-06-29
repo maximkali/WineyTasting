@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
+import { Input } from "@/common/ui/input";
+import { Label } from "@/common/ui/label";
+import { Badge } from "@/common/ui/badge";
 import { Trash2, Plus, ArrowRight } from "lucide-react";
-import WineyHeader from "@/components/winey-header";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useGame } from "@/hooks/use-game";
+import WineyHeader from "@/common/winey-header";
+import { useToast } from "@/common/hooks/use-toast";
+import { apiRequest } from "@/common/lib/queryClient";
+import { useGame } from "@/common/hooks/use-game";
 
 interface Wine {
   id: string;
@@ -154,7 +154,7 @@ export default function WineList() {
     // Save first, then navigate
     saveWinesMutation.mutate(wines, {
       onSuccess: () => {
-        navigate(`/organize/${gameId}`);
+        navigate(`/rounds/${gameId}`);
       }
     });
   };

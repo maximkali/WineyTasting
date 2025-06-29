@@ -6,8 +6,8 @@ import Home from "@/home/home";
 import Join from "@/home/join";
 import Setup from "@/setup/setup";
 import Lobby from "@/setup/lobby";
-import WineList from "@/wine-list/wine-list";
-import Rounds from "@/rounds/rounds";
+import WineList from "@/wine-rounds/wine-list";
+import Rounds from "@/wine-rounds/rounds";
 import Gambit from "@/gameplay/gambit";
 import Final from "@/gameplay/final";
 
