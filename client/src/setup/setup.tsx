@@ -83,8 +83,9 @@ export default function Setup() {
   }, [selectedPlayers, selectedBottles]);
 
   useEffect(() => {
-    if (selectedConfig) {
-      // Initialize wine bottles array based on selected configuration
+    if (selectedConfig && bottles.length === 0) {
+      // Only initialize wine bottles array if no bottles exist yet
+
       setBottles(Array.from({ length: selectedConfig.bottles }, () => ({
         labelName: "",
         funName: "",
@@ -95,7 +96,7 @@ export default function Setup() {
 
   // Effect to load existing bottles and configuration
   useEffect(() => {
-    console.log('[DEBUG] Setup page loading - gameData:', gameData, 'bottlesData:', bottlesData);
+
     
     if (gameData?.game && bottlesData?.bottles) {
       const game = gameData.game;
@@ -106,11 +107,7 @@ export default function Setup() {
       
       // Set configuration from game data
       if (game.totalBottles && game.maxPlayers && game.totalRounds && game.bottlesPerRound) {
-        console.log('[DEBUG] Loading game config:', { 
-          players: game.maxPlayers, 
-          bottles: game.totalBottles,
-          bottlesCount: bottlesData.bottles.length 
-        });
+
         
         setSelectedPlayers(game.maxPlayers);
         setSelectedBottles(game.totalBottles);
@@ -122,18 +119,18 @@ export default function Setup() {
           bottleEqPerPerson: game.bottleEqPerPerson || 0,
           ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
         };
-        console.log('[DEBUG] Setting selectedConfig:', config);
+
         setSelectedConfig(config);
         
         // Load existing bottles data
         if (bottlesData.bottles.length > 0) {
-          console.log('[DEBUG] Loading existing bottles:', bottlesData.bottles.length);
-          console.log('[DEBUG] Setting configurationStep to wines');
+
           const existingBottles = bottlesData.bottles.map((bottle: any) => ({
             labelName: bottle.labelName || "",
             funName: bottle.funName || "",
             price: (bottle.price / 100).toString() // Convert from cents back to dollars
           }));
+
           setBottles(existingBottles);
           // Always show wine entry form when bottles exist
           setConfigurationStep('wines');
@@ -451,7 +448,7 @@ export default function Setup() {
     addBottlesMutation.mutate(bottlesData);
   };
 
-  console.log('[DEBUG] Current configurationStep:', configurationStep);
+
   if (configurationStep === 'config') {
     return (
       <div className="min-h-screen bg-gray-50">
