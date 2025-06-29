@@ -31,7 +31,7 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
   return (
     <div className="flex items-center justify-between py-3 px-1">
       <div className="flex items-center gap-3">
-        <div className="w-7 h-7 bg-wine-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+        <div className="w-7 h-7 bg-red-700 text-white rounded-full flex items-center justify-center text-xs font-semibold">
           {String.fromCharCode(65 + index)}
         </div>
         <div className="flex-1">
@@ -115,7 +115,7 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
               <WineTile
                 key={wine.id}
                 wine={wine}
-                index={index}
+                index={wine.originalIndex !== undefined ? wine.originalIndex : wines.findIndex(w => w.id === wine.id)}
                 onRemove={() => onRemoveWine(round, wine.id)}
               />
             ))}
@@ -474,7 +474,7 @@ export default function Rounds() {
               {unassignedWines.map((wine) => (
                 <Card key={wine.id} className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-wine-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                    <div className="w-8 h-8 bg-red-700 text-white rounded-full flex items-center justify-center text-xs font-semibold">
                       {String.fromCharCode(65 + (wine.originalIndex !== undefined ? wine.originalIndex : wines.findIndex(w => w.id === wine.id)))}
                     </div>
                     <div className="flex-1 min-w-0">
