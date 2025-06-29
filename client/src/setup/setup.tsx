@@ -395,6 +395,18 @@ export default function Setup() {
     }
   };
 
+  // Helper function to validate wine data for button state
+  const isWineDataValid = () => {
+    if (!selectedConfig || bottles.length !== selectedConfig.bottles) return false;
+    
+    return bottles.every(bottle => 
+      bottle.labelName.trim() !== "" && 
+      bottle.price.trim() !== "" && 
+      !isNaN(parseFloat(bottle.price)) && 
+      parseFloat(bottle.price) > 0
+    );
+  };
+
   const handleWineSubmit = () => {
     if (!selectedConfig) return;
     
@@ -598,7 +610,7 @@ export default function Setup() {
                 
                 <Button 
                   onClick={handleConfigSave} 
-                  disabled={saveConfigMutation.isPending}
+                  disabled={saveConfigMutation.isPending || !hostName.trim() || !hostEmail.trim() || !selectedConfig}
                   className="w-full"
                   size="lg"
                 >
@@ -713,7 +725,7 @@ export default function Setup() {
             <div className="flex gap-4">
               <Button 
                 onClick={handleWineSubmit} 
-                disabled={addBottlesMutation.isPending}
+                disabled={addBottlesMutation.isPending || !isWineDataValid()}
                 className="flex-1"
               >
                 {addBottlesMutation.isPending ? (
