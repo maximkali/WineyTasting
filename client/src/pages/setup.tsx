@@ -94,13 +94,40 @@ export default function Setup() {
 
   // Check for step query parameter
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const urlParams = new URLSearchParams(window.location.search);
     const stepParam = urlParams.get('step');
     
-    if (stepParam === 'wines' && gameData?.game?.totalBottles) {
+    console.log('[DEBUG] Query param check - stepParam:', stepParam, 'gameData:', gameData, 'bottlesData:', bottlesData);
+    
+    if (stepParam === 'wines' && gameData?.game?.totalBottles && bottlesData?.bottles) {
+      console.log('[DEBUG] Loading data from query param navigation');
+      // Load configuration
+      const game = gameData.game;
+      setSelectedPlayers(game.maxPlayers);
+      setSelectedBottles(game.totalBottles);
+      setSelectedConfig({
+        players: game.maxPlayers,
+        bottles: game.totalBottles,
+        rounds: game.totalRounds,
+        bottlesPerRound: game.bottlesPerRound,
+        bottleEqPerPerson: game.bottleEqPerPerson || 0,
+        ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
+      });
+      
+      // Load bottles
+      if (bottlesData.bottles.length > 0) {
+        console.log('[DEBUG] Loading bottles from query param:', bottlesData.bottles.length);
+        const existingBottles = bottlesData.bottles.map((bottle: any) => ({
+          labelName: bottle.labelName || "",
+          funName: bottle.funName || "",
+          price: (bottle.price / 100).toString()
+        }));
+        setBottles(existingBottles);
+      }
+      
       setConfigurationStep('wines');
     }
-  }, [location, gameData]);
+  }, [location, gameData, bottlesData]);
 
   // Effect to load existing bottles and configuration
   useEffect(() => {
