@@ -59,9 +59,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold text-wine mb-4">🍷 WINEY
 </h1>
-          <p className="text-xl text-gray-600">
-            The ultimate wine tasting game
-          </p>
+          <p className="text-xl text-gray-600">The ultimate wine tasting game competition</p>
         </div>
 
         <Card className="shadow-xl">
