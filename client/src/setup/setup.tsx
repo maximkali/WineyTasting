@@ -643,7 +643,7 @@ export default function Setup() {
               <Badge variant="secondary">{gameData.game.maxPlayers} players</Badge>
               <Badge variant="secondary">{gameData.game.totalBottles} bottles</Badge>
               <Badge variant="secondary">{gameData.game.totalRounds} rounds</Badge>
-              <Badge variant="secondary">{gameData.game.ozPerPersonPerBottle ? gameData.game.ozPerPersonPerBottle.toFixed(2) : '0.00'} oz pours</Badge>
+              <Badge variant="secondary">{gameData.game.ozPerPersonPerBottle ? Number(gameData.game.ozPerPersonPerBottle).toFixed(2) : '0.00'} oz pours</Badge>
             </div>
           )}
         </CardHeader>
