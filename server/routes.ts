@@ -49,32 +49,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new game
   app.post("/api/games", async (req, res) => {
     try {
-      const { 
-        hostDisplayName,
-        maxPlayers,
-        totalBottles,
-        totalRounds,
-        bottlesPerRound,
-        bottleEqPerPerson,
-        ozPerPersonPerBottle
-      } = createGameSchema.parse(req.body);
+      const { hostDisplayName } = createGameSchema.parse(req.body);
       
       const gameId = generateGameCode();
       const hostToken = generateHostToken();
       const playerId = generateId();
       
-      // Create game with configuration if provided
+      // Create game
       const game = await storage.createGame({
         id: gameId,
         status: 'setup',
         currentRound: 0,
         hostToken,
-        maxPlayers,
-        totalBottles,
-        totalRounds,
-        bottlesPerRound,
-        bottleEqPerPerson,
-        ozPerPersonPerBottle,
       });
       
       // Create host player

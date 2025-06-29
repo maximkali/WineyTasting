@@ -526,35 +526,17 @@ export default function Organize() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Wine List
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Return to Wine List?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Warning: Going back to the wine list will clear all your current wine entries. You'll need to re-enter all wines. The host name will be preserved, but the wine list will be cleared.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Stay Here</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => {
-                    // Clear wine data and navigate back
-                    navigate(`/setup/${gameId}?clear=true`);
-                  }}>
-                    Clear and Go Back
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                navigate(`/setup/${gameId}`);
+              }}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Wine List
+            </Button>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
             Rounds
