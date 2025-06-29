@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, X } from "lucide-react";
@@ -450,15 +451,6 @@ export default function Organize() {
           </Button>
           
           <Button
-            onClick={handleReset}
-            disabled={rounds.flat().length === 0}
-            variant="outline"
-            size="sm"
-          >
-            Reset
-          </Button>
-          
-          <Button
             onClick={handleMixEmUp}
             disabled={rounds.flat().length === 0}
             variant="outline"
@@ -466,6 +458,32 @@ export default function Organize() {
           >
             Mix Em Up
           </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={rounds.flat().length === 0}
+                variant="outline"
+                size="sm"
+              >
+                Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Wine Organization</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will clear all round assignments and move all wines back to the unassigned section. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReset}>
+                  Reset All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {/* Rounds grid */}
