@@ -463,7 +463,7 @@ export default function Setup() {
                   {String.fromCharCode(65 + index)}
                 </div>
                 <div className="flex-1">
-                  <Label htmlFor={`label-${index}`}>Wine Name</Label>
+                  <Label htmlFor={`label-${index}`}>Label (Blinded)</Label>
                   <Input
                     id={`label-${index}`}
                     value={bottle.labelName}
@@ -472,7 +472,7 @@ export default function Setup() {
                   />
                 </div>
                 <div className="flex-1">
-                  <Label htmlFor={`fun-${index}`}>Fun Name (Optional)</Label>
+                  <Label htmlFor={`fun-${index}`}>Nickname</Label>
                   <Input
                     id={`fun-${index}`}
                     value={bottle.funName}
