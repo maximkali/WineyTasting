@@ -596,7 +596,7 @@ export default function Setup() {
                     <div className="text-sm font-medium uppercase text-muted-foreground mb-2">
                       Max Pour per Tasting:
                     </div>
-                    <div className="text-2xl font-bold text-wine">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
+                    <div className="text-2xl font-bold text-wine">{Number(selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz</div>
                   </div>
                 </div>
 
@@ -604,7 +604,7 @@ export default function Setup() {
 
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm leading-relaxed">
-                    In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {selectedConfig.ozPerPersonPerBottle} oz. That adds up to {(selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle / 25.36) * 100)}% of a standard 750ml bottle). After each round, write down quick notes on aroma, flavor, and finish. Then, rank the {selectedConfig.bottlesPerRound} wines from most to least expensive based on what you think they're worth. Once everyone submits their rankings, the game shows the correct price order – without revealing labels or actual prices – and updates the live leaderboard. You get one point for each wine you place correctly. The player with the highest total score wins.
+                    In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {Number(selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz. That adds up to {(selectedConfig.bottles * Number(selectedConfig.ozPerPersonPerBottle)).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * Number(selectedConfig.ozPerPersonPerBottle) / 25.36) * 100)}% of a standard 750ml bottle). After each round, write down quick notes on aroma, flavor, and finish. Then, rank the {selectedConfig.bottlesPerRound} wines from most to least expensive based on what you think they're worth. Once everyone submits their rankings, the game shows the correct price order – without revealing labels or actual prices – and updates the live leaderboard. You get one point for each wine you place correctly. The player with the highest total score wins.
                   </p>
                 </div>
                 
