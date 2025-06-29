@@ -45,8 +45,11 @@ export default function Setup() {
   useEffect(() => {
     if (selectedPlayers && selectedBottles) {
       const options = getRoundOptions(selectedPlayers, selectedBottles);
+      console.log(`Round options for ${selectedPlayers} players, ${selectedBottles} bottles:`, options);
       if (options.length > 0) {
         setSelectedConfig(options[0]); // Auto-select the option with most rounds
+      } else {
+        setSelectedConfig(null); // Clear selection if no options available
       }
     }
   }, [selectedPlayers, selectedBottles]);
