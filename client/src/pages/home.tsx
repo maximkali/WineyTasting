@@ -15,10 +15,13 @@ export default function Home() {
 
   const createGameMutation = useMutation({
     mutationFn: async (displayName: string) => {
-      const res = await apiRequest("POST", "/api/games", { displayName });
+      const res = await apiRequest("POST", "/api/games", { hostDisplayName: displayName });
       return res.json();
     },
     onSuccess: (data) => {
+      // Store host token and player ID in session storage
+      sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
+      sessionStorage.setItem(`game-${data.game.id}-playerId`, data.playerId);
       setLocation(`/setup/${data.game.id}`);
     },
     onError: (error) => {
