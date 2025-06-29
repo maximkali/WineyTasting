@@ -160,15 +160,31 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="min-h-[200px]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="min-h-[200px] space-y-2">
+          {/* Grid for displaying wines - up to 2 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
           </div>
+          
+          {/* Empty slots visual indicator */}
+          {wines.length < bottlesPerRound && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              {Array.from({ length: bottlesPerRound - wines.length }).map((_, index) => (
+                <div
+                  key={`empty-${index}`}
+                  className="h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400"
+                >
+                  Drop wine here
+                </div>
+              ))}
+            </div>
+          )}
+          
           {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8 text-sm border-2 border-dashed border-gray-300 rounded-lg">
-              Drop wines here
+            <div className="text-center text-gray-400 py-8 text-sm">
+              Drop {bottlesPerRound} wines here
             </div>
           )}
         </div>
