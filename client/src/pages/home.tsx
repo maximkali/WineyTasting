@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import WineyHeader from "@/components/winey-header";
 
@@ -14,9 +14,7 @@ export default function Home() {
           
           {/* Hero section */}
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-              Ready to test your palate?
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Think you can taste a difference?</h1>
             <p className="text-xl text-gray-600 leading-relaxed">
               Create a blind wine tasting experience for your friends. 
               Guess, rank, and discover who has the best wine knowledge.
@@ -25,10 +23,15 @@ export default function Home() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
-            <Button
-              onClick={() => setLocation('/setup')}
-              className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
-            >Host Tasting</Button>
+            <button
+              onClick={() => {
+                console.log('Host a Tasting clicked');
+                setLocation('/setup');
+              }}
+              className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px] inline-flex items-center justify-center"
+            >
+              Host a Tasting
+            </button>
             
             <Button
               variant="outline"
@@ -40,6 +43,13 @@ export default function Home() {
               }}
               className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
             >Join Game</Button>
+          </div>
+
+          {/* Test link */}
+          <div className="mt-4">
+            <Link href="/setup" className="text-wine underline">
+              Test link to Setup page
+            </Link>
           </div>
 
           {/* Feature highlights */}
