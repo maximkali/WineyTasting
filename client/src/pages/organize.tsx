@@ -110,7 +110,7 @@ export default function Organize() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const hostToken = localStorage.getItem(`hostToken_${gameId}`);
+  const hostToken = sessionStorage.getItem(`hostToken_${gameId}`);
   
   useEffect(() => {
     if (!hostToken) {
