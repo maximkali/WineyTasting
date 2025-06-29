@@ -24,36 +24,9 @@ export default function Home() {
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <button
-              onClick={async () => {
-                console.log('Host a Tasting clicked');
-                try {
-                  // Create a new game first
-                  const response = await fetch('/api/games', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      hostName: 'Host', // Default name, can be changed later
-                    }),
-                  });
-                  
-                  if (response.ok) {
-                    const data = await response.json();
-                    // Store the host token
-                    sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
-                    // Navigate to setup with the new game ID
-                    setLocation(`/setup/${data.game.id}`);
-                  } else {
-                    console.error('Failed to create game');
-                    // Fallback to direct navigation
-                    setLocation('/setup');
-                  }
-                } catch (error) {
-                  console.error('Error creating game:', error);
-                  // Fallback to direct navigation
-                  setLocation('/setup');
-                }
+              onClick={() => {
+                console.log('Host a Tasting clicked - navigating to setup');
+                setLocation('/setup');
               }}
               className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px] inline-flex items-center justify-center"
             >
