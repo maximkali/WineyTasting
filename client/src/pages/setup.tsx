@@ -416,11 +416,11 @@ export default function Setup() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLocation("/")}
+          onClick={resetConfiguration}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          Back to Settings
         </Button>
       </div>
       <Card>
