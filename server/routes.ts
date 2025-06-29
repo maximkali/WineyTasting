@@ -231,13 +231,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hostToken = req.headers.authorization?.replace('Bearer ', '');
       
       const game = await storage.getGame(gameId);
+      console.log('[DEBUG] GET bottles - gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...', 'game.hostToken:', game?.hostToken?.substring(0, 10) + '...');
+      
       if (!game || game.hostToken !== hostToken) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
       const bottles = await storage.getBottlesByGame(gameId);
+      console.log('[DEBUG] Found bottles:', bottles.length);
       res.json({ bottles });
     } catch (error) {
+      console.error('[DEBUG] Error fetching bottles:', error);
       res.status(500).json({ error: 'Failed to fetch bottles' });
     }
   });

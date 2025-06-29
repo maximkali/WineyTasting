@@ -228,23 +228,47 @@ export default function Organize() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get host token from session storage (consistent with setup page)
-  const hostToken = sessionStorage.getItem(`game-${gameId}-hostToken`);
+  // Check for temporary game data first (consistent with setup page)
+  const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
+  const isTemporaryGame = tempGameData?.status === 'temp';
+  
+  // Use different tokens for temp vs real games (consistent with setup page)
+  const hostToken = isTemporaryGame 
+    ? tempGameData?.hostToken 
+    : sessionStorage.getItem(`game-${gameId}-hostToken`);
+  console.log('[DEBUG] Organize page - gameId:', gameId, 'isTemporaryGame:', isTemporaryGame, 'hostToken:', hostToken?.substring(0, 10) + '...');
 
   // Game data using the hook
   const { data: gameData, isLoading, isError } = useGame(gameId!);
 
   // Fetch bottles data separately
-  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+  const { data: bottlesData, isLoading: bottlesLoading, error: bottlesError } = useQuery({
     queryKey: [`/api/games/${gameId}/bottles`],
     enabled: !!gameId && !!hostToken,
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
-        headers: { Authorization: `Bearer ${hostToken}` },
-      });
-      return response.json();
+      console.log('[DEBUG] Fetching bottles with gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...');
+      try {
+        const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
+          headers: { Authorization: `Bearer ${hostToken}` },
+        });
+        const data = await response.json();
+        console.log('[DEBUG] Bottles response:', data);
+        return data;
+      } catch (error) {
+        console.error('[DEBUG] Error fetching bottles:', error);
+        throw error;
+      }
     },
   });
+  
+  // Log query state
+  console.log('[DEBUG] Bottles query state - loading:', bottlesLoading, 'error:', bottlesError, 'data:', bottlesData);
+  
+  // Invalidate bottles cache on mount to force fresh fetch
+  useEffect(() => {
+    console.log('[DEBUG] Invalidating bottles cache for gameId:', gameId);
+    queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
+  }, [gameId, queryClient]);
   
   const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
@@ -524,7 +548,11 @@ export default function Organize() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/setup/${gameId}?hostToken=${hostToken}`)}
+              onClick={() => {
+                // Set the configuration step to 'wine' to show the wine list
+                sessionStorage.setItem(`game-${gameId}-configStep`, 'wine');
+                navigate(`/setup/${gameId}`);
+              }}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
