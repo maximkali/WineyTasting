@@ -26,6 +26,10 @@ export default function Setup() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // Check if this is a new game flow (no gameId) or existing game
+  const hostDisplayName = sessionStorage.getItem("hostDisplayName");
+  const isNewGame = !gameId && !!hostDisplayName;
+  
   // Check for temporary game data first
   const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
   const isTemporaryGame = tempGameData?.status === 'temp';
@@ -35,10 +39,10 @@ export default function Setup() {
     ? tempGameData?.hostToken 
     : sessionStorage.getItem(`game-${gameId}-hostToken`);
   
-  // Only fetch from API if it's not a temporary game
+  // Only fetch from API if it's not a temporary game AND not a new game
   const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
     queryKey: [`/api/games/${gameId}`],
-    enabled: !isTemporaryGame && !!gameId && !!hostToken,
+    enabled: !isTemporaryGame && !isNewGame && !!gameId && !!hostToken,
     refetchInterval: 5000,
   });
 
@@ -145,18 +149,48 @@ export default function Setup() {
         bottleEqPerPerson: config.bottleEqPerPerson,
         ozPerPersonPerBottle: config.ozPerPersonPerBottle,
       };
-      const res = await apiRequest("POST", `/api/games/${gameId}/config`, configData, {
-        headers: { Authorization: `Bearer ${hostToken}` },
-      });
-      return res.json();
+      
+      if (isNewGame) {
+        // First create the game
+        const gameRes = await apiRequest("POST", "/api/games", {
+          displayName: hostDisplayName,
+        });
+        const gameData = await gameRes.json();
+        
+        // Store the tokens for future use
+        sessionStorage.setItem(`game-${gameData.game.id}-hostToken`, gameData.hostToken);
+        sessionStorage.setItem("hostToken", gameData.hostToken);
+        
+        // Then apply configuration to the new game
+        const configRes = await apiRequest("POST", `/api/games/${gameData.game.id}/config`, configData, {
+          headers: { Authorization: `Bearer ${gameData.hostToken}` },
+        });
+        
+        // Update the URL to include the gameId
+        setLocation(`/setup/${gameData.game.id}`);
+        
+        return { game: gameData.game, config: await configRes.json() };
+      } else {
+        // Existing flow for games that already exist
+        const res = await apiRequest("POST", `/api/games/${gameId}/config`, configData, {
+          headers: { Authorization: `Bearer ${hostToken}` },
+        });
+        return res.json();
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
+    onSuccess: (data) => {
+      const currentGameId = isNewGame ? data.game.id : gameId;
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${currentGameId}`] });
       setConfigurationStep('wines');
       toast({
         title: "Configuration Saved",
         description: "Game configuration set successfully!",
       });
+      
+      // Clear the hostDisplayName from session storage since we no longer need it
+      if (isNewGame) {
+        sessionStorage.removeItem("hostDisplayName");
+      }
     },
     onError: (error) => {
       toast({
