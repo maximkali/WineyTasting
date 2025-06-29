@@ -1,44 +1,11 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiRequest } from "@/lib/queryClient";
 import WineyHeader from "@/components/winey-header";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-
-  const createGameMutation = useMutation({
-    mutationFn: async (displayName: string) => {
-      const res = await apiRequest("POST", "/api/games", { hostDisplayName: displayName });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      // Store host token and player ID in session storage
-      sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
-      sessionStorage.setItem(`game-${data.game.id}-playerId`, data.playerId);
-      setLocation(`/setup/${data.game.id}`);
-    },
-    onError: (error) => {
-      alert(`Error: ${error.message}`);
-    },
-  });
-
-  const handleCreateGame = () => {
-    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-    
-    if (!firstName.trim() || !lastName.trim()) {
-      alert("Please enter both first and last name");
-      return;
-    }
-
-    createGameMutation.mutate(fullName);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,37 +16,14 @@ export default function Home() {
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-base font-medium">Are you hosting a blind tasting? Enter your...</Label>
-                  <div className="space-y-3 mt-2">
-                    <Input
-                      id="firstName"
-                      type="text"
-                      placeholder="First name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      maxLength={15}
-                      autoComplete="given-name"
-                      className="w-full"
-                    />
-                    <Input
-                      id="lastName"
-                      type="text"
-                      placeholder="Last name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      maxLength={15}
-                      autoComplete="family-name"
-                      className="w-full"
-                    />
-                  </div>
+                  <Label className="text-base font-medium">Are you hosting a blind tasting?</Label>
                 </div>
 
                 <Button
-                  onClick={handleCreateGame}
-                  disabled={!firstName.trim() || !lastName.trim() || createGameMutation.isPending}
+                  onClick={() => setLocation('/setup')}
                   className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
                 >
-                  {createGameMutation.isPending ? "Creating Game..." : "Let's Get Started!"}
+                  Let's Get Started!
                 </Button>
               </div>
 
