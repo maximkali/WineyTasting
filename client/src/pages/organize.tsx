@@ -162,11 +162,16 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
       <CardContent>
         <div className="min-h-[200px] space-y-2">
           {/* Grid for displaying wines - up to 2 columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {wines.map((wine, index) => (
-              <SortableWine key={wine.id} wine={wine} index={index} />
-            ))}
-          </div>
+          <SortableContext 
+            items={wines.map(w => w.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {wines.map((wine, index) => (
+                <SortableWine key={wine.id} wine={wine} index={index} />
+              ))}
+            </div>
+          </SortableContext>
           
           {/* Empty slots visual indicator */}
           {wines.length < bottlesPerRound && (
