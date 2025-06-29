@@ -62,9 +62,6 @@ export default function Home() {
           <p className="text-xl text-gray-600">
             The ultimate wine tasting game
           </p>
-          <p className="text-gray-500 mt-2">
-            Create memorable wine experiences with friends
-          </p>
         </div>
 
         <Card className="shadow-xl">
