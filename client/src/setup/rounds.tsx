@@ -471,11 +471,11 @@ export default function Rounds() {
               Unassigned Wines ({unassignedWines.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {unassignedWines.map((wine, index) => (
+              {unassignedWines.map((wine) => (
                 <Card key={wine.id} className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                      ?
+                    <div className="w-8 h-8 bg-wine-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                      {String.fromCharCode(65 + (wine.originalIndex || wines.findIndex(w => w.id === wine.id)))}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
