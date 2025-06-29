@@ -90,7 +90,7 @@ export default function Home() {
 
           <div className="text-center">
             <div className="mb-4">
-              <div className="text-5xl">🥇</div>
+              <div className="text-5xl">🏆</div>
             </div>
             <h3 className="font-semibold text-lg mb-2 text-gray-900">Compete & Win</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -122,7 +122,7 @@ export default function Home() {
           </span>
           <span>→</span>
           <span className="flex items-center">
-            <span className="mr-2 text-[#F59E0B]">🥇</span>
+            <span className="mr-2 text-[#F59E0B]">🏆</span>
             Win
           </span>
         </div>
