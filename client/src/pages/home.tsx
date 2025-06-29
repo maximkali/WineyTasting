@@ -39,7 +39,7 @@ export default function Home() {
                 }
               }}
               className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
-            >Join a Game</Button>
+            >Join Game</Button>
           </div>
 
           {/* Feature highlights */}
