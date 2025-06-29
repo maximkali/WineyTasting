@@ -159,37 +159,32 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        <div className="flex-1 space-y-2">
-          {/* Wine tiles */}
-          <SortableContext 
-            items={wines.map(w => w.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="space-y-2">
-              {wines.map((wine, index) => (
-                <SortableWine key={wine.id} wine={wine} index={index} />
-              ))}
-            </div>
-          </SortableContext>
-          
-          {/* Empty slots visual indicator */}
-          {wines.length < bottlesPerRound && (
-            <div className="space-y-2">
-              {Array.from({ length: bottlesPerRound - wines.length }).map((_, index) => (
-                <div
-                  key={`empty-${index}`}
-                  className="h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400"
-                >
-                  Drop wine here
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Fill remaining space to make entire card droppable */}
-          <div className="flex-1 min-h-[50px]"></div>
-        </div>
+      <CardContent className="flex-1 min-h-[300px] flex flex-col">
+        {/* Wine tiles */}
+        {wines.length > 0 && (
+          <div className="space-y-2">
+            <SortableContext 
+              items={wines.map(w => w.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="space-y-2">
+                {wines.map((wine, index) => (
+                  <SortableWine key={wine.id} wine={wine} index={index} />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        )}
+        
+        {/* Empty state message when no wines */}
+        {wines.length === 0 && (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+            Drop wines anywhere in this card
+          </div>
+        )}
+        
+        {/* Fill remaining space to make entire card droppable */}
+        <div className="flex-1"></div>
       </CardContent>
     </Card>
   );
