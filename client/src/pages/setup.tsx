@@ -27,8 +27,7 @@ export default function Setup() {
   const { toast } = useToast();
   
   // Check if this is a new game flow (no gameId) or existing game
-  const hostDisplayName = sessionStorage.getItem("hostDisplayName");
-  const isNewGame = !gameId && !!hostDisplayName;
+  const isNewGame = !gameId;
   
   // Check for temporary game data first
   const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
@@ -153,7 +152,7 @@ export default function Setup() {
       if (isNewGame) {
         // First create the game
         const gameRes = await apiRequest("POST", "/api/games", {
-          displayName: hostDisplayName,
+          displayName: "Host",
         });
         const gameData = await gameRes.json();
         
@@ -187,10 +186,7 @@ export default function Setup() {
         description: "Game configuration set successfully!",
       });
       
-      // Clear the hostDisplayName from session storage since we no longer need it
-      if (isNewGame) {
-        sessionStorage.removeItem("hostDisplayName");
-      }
+      // Game created successfully
     },
     onError: (error) => {
       toast({

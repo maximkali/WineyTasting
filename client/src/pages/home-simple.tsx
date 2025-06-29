@@ -1,31 +1,10 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 
 export default function HomeSimple() {
   const [, setLocation] = useLocation();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
 
   const handleCreateGame = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      alert("Please enter both first and last name");
-      return;
-    }
-
-    const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    const tempGameId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const tempHostToken = Math.random().toString(36).substring(2, 32);
-    
-    sessionStorage.setItem(`tempGame_${tempGameId}`, JSON.stringify({
-      hostDisplayName: fullName,
-      gameId: tempGameId,
-      hostToken: tempHostToken,
-      created: new Date().toISOString(),
-      status: 'temp'
-    }));
-    
-    console.log("Starting temporary game:", tempGameId);
-    setLocation(`/setup/${tempGameId}`);
+    setLocation("/setup");
   };
 
   const handleJoinGame = () => {
@@ -54,31 +33,12 @@ export default function HomeSimple() {
         <div className="bg-white rounded-lg shadow-lg p-8 w-full">
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-medium mb-4">Are you hosting a blind tasting? Enter your...</h2>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="First name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  maxLength={15}
-                />
-                <input
-                  type="text"
-                  placeholder="Last name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  maxLength={15}
-                />
-              </div>
+              <h2 className="text-lg font-medium mb-4">Ready to host a blind tasting?</h2>
             </div>
 
             <button
               onClick={handleCreateGame}
-              disabled={!firstName.trim() || !lastName.trim()}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-full text-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
             >
               Let's Get Started!
             </button>

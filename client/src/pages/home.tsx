@@ -1,43 +1,12 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Wine, Trophy, BarChart3, CheckCircle2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [showHostDialog, setShowHostDialog] = useState(false);
 
   const handleHostGame = () => {
-    setShowHostDialog(true);
-  };
-
-  const handleCreateGame = () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your first and last name",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Store host name in session storage and go directly to setup form
-    const displayName = `${firstName} ${lastName}`.trim();
-    sessionStorage.setItem("hostDisplayName", displayName);
     setLocation("/setup");
   };
 
@@ -167,50 +136,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Host Game Dialog */}
-      <Dialog open={showHostDialog} onOpenChange={setShowHostDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Welcome! Let's get started</DialogTitle>
-            <DialogDescription>
-              Enter your name to create a new wine tasting session
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Input
-                placeholder="First name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreateGame()}
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
-                placeholder="Last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreateGame()}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowHostDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateGame}
-              className="bg-[#8B1A1A] hover:bg-[#7A1515] text-white"
-            >
-              Create Game
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
