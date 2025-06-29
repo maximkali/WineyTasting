@@ -447,7 +447,7 @@ export default function Organize() {
             variant="outline"
             size="sm"
           >
-            Auto Assign
+            🤖 Auto Assign
           </Button>
           
           <Button
@@ -456,7 +456,7 @@ export default function Organize() {
             variant="outline"
             size="sm"
           >
-            Mix Em Up
+            🔀 Mix 'Em Up
           </Button>
           
           <AlertDialog>
@@ -466,7 +466,7 @@ export default function Organize() {
                 variant="outline"
                 size="sm"
               >
-                Reset
+                🔄 Reset
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
