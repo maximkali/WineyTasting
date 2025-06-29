@@ -310,18 +310,19 @@ export default function Setup() {
       return;
     }
     
-    // Check if configuration already exists and matches current selection
-    const game = gameData?.game;
-    if (game?.totalBottles === selectedConfig.bottles && 
-        game?.maxPlayers === selectedConfig.players &&
-        game?.totalRounds === selectedConfig.rounds &&
-        bottlesData?.bottles?.length > 0) {
-      // Configuration unchanged and bottles exist, go directly to wines
-      setConfigurationStep('wines');
-      return;
-    }
+    // Check if we need to save or just move forward
+    const existingGame = gameData?.game;
+    const configChanged = !existingGame?.totalBottles || 
+                         existingGame.totalBottles !== selectedConfig.bottles ||
+                         existingGame.maxPlayers !== selectedConfig.players ||
+                         existingGame.totalRounds !== selectedConfig.rounds;
     
-    saveConfigMutation.mutate(selectedConfig);
+    if (configChanged) {
+      saveConfigMutation.mutate(selectedConfig);
+    } else {
+      // Configuration hasn't changed, just move to wine entry
+      setConfigurationStep('wines');
+    }
   };
 
   const handleWineSubmit = () => {
@@ -517,11 +518,7 @@ export default function Setup() {
                   className="w-full"
                   size="lg"
                 >
-                  {saveConfigMutation.isPending ? "Creating..." : 
-                   (gameData?.game?.totalBottles === selectedConfig?.bottles && 
-                    gameData?.game?.maxPlayers === selectedConfig?.players &&
-                    gameData?.game?.totalRounds === selectedConfig?.rounds &&
-                    bottlesData?.bottles?.length > 0) ? "Continue to Wine List" : "Next"}
+                  {saveConfigMutation.isPending ? "Creating..." : "Next"}
                 </Button>
               </div>
             )}
