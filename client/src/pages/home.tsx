@@ -78,7 +78,7 @@ export default function Home() {
             <div className="space-y-4">
               <div>
                 <Label className="text-base font-medium">
-                  You'll be the game host
+                  You'll be the blind tasting host
                 </Label>
                 <div className="space-y-3 mt-2">
                   <Input
