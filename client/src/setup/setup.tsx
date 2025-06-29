@@ -598,7 +598,7 @@ export default function Setup() {
                   className="w-full"
                   size="lg"
                 >
-                  {saveConfigMutation.isPending ? "Creating..." : "Next"}
+                  {saveConfigMutation.isPending ? "Creating..." : "Create Game"}
                 </Button>
               </div>
             )}
