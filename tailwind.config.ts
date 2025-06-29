@@ -61,6 +61,13 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        // Wine theme colors
+        wine: "var(--wine)",
+        rose: "var(--rose)",
+        gold: "var(--gold)",
+        sage: "var(--sage)",
+        charcoal: "var(--charcoal)",
+        "warm-white": "var(--warm-white)",
       },
       keyframes: {
         "accordion-down": {
