@@ -33,7 +33,7 @@ export default function Setup() {
   // Use different tokens for temp vs real games
   const hostToken = isTemporaryGame 
     ? tempGameData?.hostToken 
-    : sessionStorage.getItem(`hostToken_${gameId}`);
+    : sessionStorage.getItem(`game-${gameId}-hostToken`);
   
   // Only fetch from API if it's not a temporary game
   const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
