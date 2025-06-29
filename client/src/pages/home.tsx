@@ -86,24 +86,7 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-              {/* Quick access to existing game with wines */}
-              <div className="text-center">
-                <p className="text-sm text-gray-500 mb-3">
-                  Continue your existing game with wines:
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Direct link to your game with wines
-                    setLocation(`/setup/RLCDK7?hostToken=55ec72cdc54b4e62cc4098560abcf4ac8bdec1390fb03cefaa09cb8c76e90f61`);
-                  }}
-                  className="border-wine text-wine hover:bg-rose mb-3"
-                >
-                  Continue Game RLCDK7 (Your Wines)
-                </Button>
-              </div>
-              
+            <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="text-center">
                 <p className="text-sm text-gray-500 mb-3">
                   Already have a game code?
@@ -121,6 +104,11 @@ export default function Home() {
                   Join Existing Game
                 </Button>
               </div>
+            </div>
+
+            {/* Game flow tagline */}
+            <div className="text-center mt-8 text-gray-500 text-sm">
+              🍷 Sip → 🔢 Rank → ✅ Score → 🥇 Win
             </div>
 
           </CardContent>
