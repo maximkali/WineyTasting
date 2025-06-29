@@ -198,12 +198,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Game already started' });
       }
       
-      // Check if bottles already exist for this game
+      // Check if bottles already exist for this game and delete them (replace functionality)
       const existingBottles = await storage.getBottlesByGame(gameId);
       if (existingBottles.length > 0) {
-        return res.status(400).json({ 
-          error: 'Bottles already exist for this game. Please use PUT endpoint to update them.' 
-        });
+        for (const bottle of existingBottles) {
+          await storage.deleteBottle(bottle.id);
+        }
       }
       
       // Check for unique prices
