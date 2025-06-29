@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Settings, Users, Wine, RotateCcw } from "lucide-react";
+import { Trash2, Settings, Users, Wine, RotateCcw, Plus } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -431,6 +431,7 @@ export default function Setup() {
               disabled={!selectedConfig || bottles.length >= selectedConfig.bottles} 
               className="flex-1"
             >
+              <Plus className="h-4 w-4 mr-2" />
               Add Wine
             </Button>
           </div>
