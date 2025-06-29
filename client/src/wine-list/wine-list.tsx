@@ -1,0 +1,288 @@
+import { useState, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, ArrowRight } from "lucide-react";
+import WineyHeader from "@/components/winey-header";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useGame } from "@/hooks/use-game";
+
+interface Wine {
+  id: string;
+  labelName: string;
+  funName: string | null;
+  price: number;
+}
+
+export default function WineList() {
+  const { gameId } = useParams<{ gameId: string }>();
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Game data using the hook
+  const { data: gameData, isLoading, isError } = useGame(gameId!);
+
+  // Host token retrieval
+  const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
+
+  // Bottles data
+  const { data: bottlesData } = useQuery({
+    queryKey: ['/api/games', gameId, 'bottles'],
+    enabled: !!gameId && !!hostToken,
+  });
+
+  // Form state
+  const [wines, setWines] = useState<Wine[]>([]);
+  const [formData, setFormData] = useState({
+    labelName: '',
+    funName: '',
+    price: ''
+  });
+
+  // Load existing bottles into form
+  useEffect(() => {
+    if (bottlesData?.bottles) {
+      const wineData = bottlesData.bottles.map((bottle: any) => ({
+        id: bottle.id,
+        labelName: bottle.labelName,
+        funName: bottle.funName,
+        price: bottle.price / 100 // Convert from cents
+      }));
+      setWines(wineData);
+    }
+  }, [bottlesData]);
+
+  // Save wines mutation
+  const saveWinesMutation = useMutation({
+    mutationFn: async (wineList: Wine[]) => {
+      const bottles = wineList.map(wine => ({
+        labelName: wine.labelName,
+        funName: wine.funName || null,
+        price: Math.round(wine.price * 100), // Convert to cents
+        gameId: gameId!
+      }));
+
+      return apiRequest('/api/games/' + gameId + '/bottles', {
+        method: 'PUT',
+        body: JSON.stringify({ bottles }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${hostToken}`
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/games', gameId, 'bottles'] });
+      toast({
+        title: "Success",
+        description: "Wines saved successfully!"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error", 
+        description: "Failed to save wines. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const addWine = () => {
+    if (!formData.labelName || !formData.price) {
+      toast({
+        title: "Error",
+        description: "Please fill in label name and price",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const price = parseFloat(formData.price);
+    if (isNaN(price) || price <= 0) {
+      toast({
+        title: "Error", 
+        description: "Please enter a valid price",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newWine: Wine = {
+      id: Date.now().toString(),
+      labelName: formData.labelName.trim(),
+      funName: formData.funName.trim() || null,
+      price: price
+    };
+
+    setWines([...wines, newWine]);
+    setFormData({ labelName: '', funName: '', price: '' });
+  };
+
+  const removeWine = (id: string) => {
+    setWines(wines.filter(w => w.id !== id));
+  };
+
+  const handleSave = () => {
+    if (wines.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one wine",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    saveWinesMutation.mutate(wines);
+  };
+
+  const handleNext = () => {
+    if (wines.length === 0) {
+      toast({
+        title: "Error", 
+        description: "Please add wines before proceeding",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Save first, then navigate
+    saveWinesMutation.mutate(wines, {
+      onSuccess: () => {
+        navigate(`/organize/${gameId}`);
+      }
+    });
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading game data</div>;
+  if (!gameData) return <div>Game not found</div>;
+
+  const { game } = gameData;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <WineyHeader />
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+            Wine List
+          </h1>
+          <p className="text-gray-600 text-center">
+            Add your {game.totalBottles} wines for the tasting
+          </p>
+        </div>
+
+        {/* Add Wine Form */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Add Wine</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <Label htmlFor="labelName">Wine Label Name *</Label>
+                <Input
+                  id="labelName"
+                  value={formData.labelName}
+                  onChange={(e) => setFormData({ ...formData, labelName: e.target.value })}
+                  placeholder="e.g., Chateau Margaux 2015"
+                />
+              </div>
+              <div>
+                <Label htmlFor="funName">Fun Name (Optional)</Label>
+                <Input
+                  id="funName"
+                  value={formData.funName}
+                  onChange={(e) => setFormData({ ...formData, funName: e.target.value })}
+                  placeholder="e.g., The Mystery Red"
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price ($) *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="e.g., 25.99"
+                />
+              </div>
+            </div>
+            <Button onClick={addWine} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Wine
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Wine List */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Your Wines ({wines.length}/{game.totalBottles})</span>
+              <Badge variant={wines.length === game.totalBottles ? "default" : "secondary"}>
+                {wines.length === game.totalBottles ? "Complete" : "In Progress"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {wines.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">
+                No wines added yet. Use the form above to add your first wine.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {wines.map((wine, index) => (
+                  <div key={wine.id} className="flex items-center justify-between p-3 border rounded-lg bg-white">
+                    <div className="flex-1">
+                      <div className="font-medium">{wine.labelName}</div>
+                      {wine.funName && (
+                        <div className="text-sm text-gray-500">"{wine.funName}"</div>
+                      )}
+                      <div className="text-sm text-green-600 font-medium">${wine.price.toFixed(2)}</div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeWine(wine.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handleSave}
+            disabled={saveWinesMutation.isPending || wines.length === 0}
+          >
+            {saveWinesMutation.isPending ? "Saving..." : "Save Wines"}
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            disabled={saveWinesMutation.isPending || wines.length === 0}
+            className="flex items-center gap-2"
+          >
+            Continue to Rounds
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

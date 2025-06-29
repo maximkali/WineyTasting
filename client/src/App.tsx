@@ -1,14 +1,15 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient } from "./common/lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/home";
-import Setup from "@/pages/setup";
-import Rounds from "@/pages/rounds";
-import Join from "@/pages/join";
-import Lobby from "@/pages/lobby";
-import Gambit from "@/pages/gambit";
-import Final from "@/pages/final";
+import NotFound from "@/common/not-found";
+import Home from "@/home/home";
+import Join from "@/home/join";
+import Setup from "@/setup/setup";
+import Lobby from "@/setup/lobby";
+import WineList from "@/wine-list/wine-list";
+import Rounds from "@/rounds/rounds";
+import Gambit from "@/gameplay/gambit";
+import Final from "@/gameplay/final";
 
 function Router() {
   return (
@@ -16,7 +17,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/setup/:gameId" component={Setup} />
       <Route path="/setup" component={Setup} />
-      <Route path="/organize/:gameId" component={Rounds} />
+      <Route path="/wine-list/:gameId" component={WineList} />
+      <Route path="/rounds/:gameId" component={Rounds} />
       <Route path="/join/:gameCode" component={Join} />
       <Route path="/lobby/:gameId" component={Lobby} />
       <Route path="/gambit/:gameId" component={Gambit} />
