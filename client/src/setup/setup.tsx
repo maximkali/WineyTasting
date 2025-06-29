@@ -114,18 +114,21 @@ export default function Setup() {
         
         setSelectedPlayers(game.maxPlayers);
         setSelectedBottles(game.totalBottles);
-        setSelectedConfig({
+        const config = {
           players: game.maxPlayers,
           bottles: game.totalBottles,
           rounds: game.totalRounds,
           bottlesPerRound: game.bottlesPerRound,
           bottleEqPerPerson: game.bottleEqPerPerson || 0,
           ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
-        });
+        };
+        console.log('[DEBUG] Setting selectedConfig:', config);
+        setSelectedConfig(config);
         
         // Load existing bottles data
         if (bottlesData.bottles.length > 0) {
           console.log('[DEBUG] Loading existing bottles:', bottlesData.bottles.length);
+          console.log('[DEBUG] Setting configurationStep to wines');
           const existingBottles = bottlesData.bottles.map((bottle: any) => ({
             labelName: bottle.labelName || "",
             funName: bottle.funName || "",
@@ -448,6 +451,7 @@ export default function Setup() {
     addBottlesMutation.mutate(bottlesData);
   };
 
+  console.log('[DEBUG] Current configurationStep:', configurationStep);
   if (configurationStep === 'config') {
     return (
       <div className="min-h-screen bg-gray-50">
