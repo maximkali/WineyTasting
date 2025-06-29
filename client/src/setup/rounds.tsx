@@ -1,10 +1,12 @@
 import { useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Shuffle, Save, RotateCcw, Wine, ChevronRight } from "lucide-react";
+import { Shuffle, Save, RotateCcw, Wine, ChevronRight, Plus, X } from "lucide-react";
 import { Button } from "@/common/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Badge } from "@/common/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/common/ui/dialog";
+import { Checkbox } from "@/common/ui/checkbox";
 import WineyHeader from "@/common/winey-header";
 import { toast, useToast } from "@/common/hooks/use-toast";
 import { queryClient, apiRequest } from "@/common/lib/queryClient";
@@ -60,6 +62,27 @@ interface RoundCardProps {
 }
 
 function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, onRemoveWine }: RoundCardProps) {
+  const [selectedWines, setSelectedWines] = useState<string[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleWineToggle = (wineId: string) => {
+    setSelectedWines(prev => 
+      prev.includes(wineId) 
+        ? prev.filter(id => id !== wineId)
+        : [...prev, wineId]
+    );
+  };
+
+  const handleAddSelectedWines = () => {
+    if (selectedWines.length > 0) {
+      onAddWines(round, selectedWines);
+      setSelectedWines([]);
+      setIsDialogOpen(false);
+    }
+  };
+
+  const remainingSlots = bottlesPerRound - wines.length;
+
   return (
     <Card className={wines.length === bottlesPerRound ? "border-green-500" : ""}>
       <CardHeader>
@@ -88,20 +111,69 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
         
         {wines.length < bottlesPerRound && availableWines.length > 0 && (
           <div className="mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                // Simple selection - just add the first available wine
-                const wineToAdd = availableWines[0];
-                if (wineToAdd) {
-                  onAddWines(round, [wineToAdd.id]);
-                }
-              }}
-            >
-              Add Wine
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Wines ({remainingSlots} slots)
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add Wines to Round {round + 1}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Select up to {remainingSlots} wine{remainingSlots !== 1 ? 's' : ''} to add to this round:
+                  </p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {availableWines.map((wine) => (
+                      <div key={wine.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                        <Checkbox
+                          id={`wine-${wine.id}`}
+                          checked={selectedWines.includes(wine.id)}
+                          onCheckedChange={() => handleWineToggle(wine.id)}
+                          disabled={!selectedWines.includes(wine.id) && selectedWines.length >= remainingSlots}
+                        />
+                        <label htmlFor={`wine-${wine.id}`} className="flex-1 cursor-pointer">
+                          <div>
+                            <p className="font-medium">{wine.funName || wine.labelName}</p>
+                            <p className="text-sm text-gray-500">{wine.labelName}</p>
+                            <p className="text-sm text-gray-400">${wine.price}</p>
+                          </div>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <p className="text-sm text-gray-600">
+                      {selectedWines.length} selected
+                    </p>
+                    <div className="space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedWines([]);
+                          setIsDialogOpen(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleAddSelectedWines}
+                        disabled={selectedWines.length === 0}
+                      >
+                        Add {selectedWines.length} Wine{selectedWines.length !== 1 ? 's' : ''}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </CardContent>
@@ -133,15 +205,6 @@ export default function Rounds() {
   
   // Load wines from database on mount
   useEffect(() => {
-    console.log('[DEBUG] Rounds page - useEffect triggered:', {
-      bottlesData,
-      gameData,
-      gameId,
-      hostToken,
-      bottlesLoading,
-      gameLoading
-    });
-    
     if (bottlesData?.bottles && gameData?.game) {
       const wineData = bottlesData.bottles.map((bottle: any, index: number) => ({
         id: bottle.id,
@@ -150,21 +213,13 @@ export default function Rounds() {
         price: bottle.price / 100, // Convert from cents
         originalIndex: index
       }));
-      console.log('[DEBUG] Rounds page - Loading bottles from DB:', wineData);
       setWines(wineData);
       
       // Initialize empty rounds
       const totalRounds = gameData.game.totalRounds || 5;
       setRounds(Array(totalRounds).fill(null).map(() => []));
-    } else {
-      console.log('[DEBUG] Rounds page - Missing data:', {
-        hasBottlesData: !!bottlesData?.bottles,
-        bottlesCount: bottlesData?.bottles?.length,
-        hasGameData: !!gameData?.game,
-        gameDataGame: gameData?.game
-      });
     }
-  }, [bottlesData, gameData, gameId, hostToken, bottlesLoading, gameLoading]);
+  }, [bottlesData, gameData]);
 
   // Get unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
