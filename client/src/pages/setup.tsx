@@ -4,22 +4,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import WineyHeader from "@/components/winey-header";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getUniquePlayerCounts, getBottleOptionsForPlayers } from "@/../../shared/game-setups";
 
 export default function Setup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [playerCount, setPlayerCount] = useState<number | null>(null);
+  const [bottleCount, setBottleCount] = useState<number | null>(null);
   const [isCreatingGame, setIsCreatingGame] = useState(false);
+
+  const playerOptions = getUniquePlayerCounts();
+  const bottleOptions = playerCount ? getBottleOptionsForPlayers(playerCount) : [];
 
   const createGameMutation = useMutation({
     mutationFn: async () => {
       const hostDisplayName = `${firstName} ${lastName}`.trim();
-      const response = await apiRequest("POST", "/api/games", { hostDisplayName });
+      const selectedConfig = bottleOptions.find(option => option.bottles === bottleCount);
+      
+      if (!selectedConfig) {
+        throw new Error("Invalid game configuration selected");
+      }
+      
+      const response = await apiRequest("POST", "/api/games", {
+        hostDisplayName,
+        maxPlayers: selectedConfig.players,
+        totalBottles: selectedConfig.bottles,
+        totalRounds: selectedConfig.rounds,
+        bottlesPerRound: selectedConfig.bottlesPerRound,
+        bottleEqPerPerson: selectedConfig.bottleEqPerPerson,
+        ozPerPersonPerBottle: selectedConfig.ozPerPersonPerBottle,
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -28,7 +49,7 @@ export default function Setup() {
       
       toast({
         title: "Game created successfully!",
-        description: "Setting up your wine tasting game...",
+        description: `Game ID: ${data.game.id} - Now add your wines!`,
       });
       
       // Navigate to the organize page with the game ID
@@ -51,6 +72,15 @@ export default function Setup() {
       toast({
         title: "Name required",
         description: "Please enter both your first and last name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!playerCount || !bottleCount) {
+      toast({
+        title: "Game setup required",
+        description: "Please select the number of players and bottles.",
         variant: "destructive",
       });
       return;
@@ -101,11 +131,56 @@ export default function Setup() {
                   />
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label>Number of Players</Label>
+                  <Select 
+                    onValueChange={(value) => {
+                      setPlayerCount(parseInt(value));
+                      setBottleCount(null); // Reset bottle count when player count changes
+                    }}
+                    disabled={isCreatingGame}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select number of players" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {playerOptions.map((count) => (
+                        <SelectItem key={count} value={count.toString()}>
+                          {count} players
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {playerCount && (
+                  <div>
+                    <Label>Number of Bottles</Label>
+                    <Select 
+                      onValueChange={(value) => setBottleCount(parseInt(value))}
+                      disabled={isCreatingGame}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select number of bottles" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bottleOptions.map((option) => (
+                          <SelectItem key={option.bottles} value={option.bottles.toString()}>
+                            {option.bottles} bottles ({option.rounds} rounds, {option.bottlesPerRound} bottles per round)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
               
               <Button 
                 type="submit" 
                 className="w-full bg-wine hover:bg-wine/90 text-white"
-                disabled={isCreatingGame}
+                disabled={isCreatingGame || !firstName || !lastName || !playerCount || !bottleCount}
               >
                 {isCreatingGame ? "Creating Game..." : "Create Wine Tasting Game"}
               </Button>
