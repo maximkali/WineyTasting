@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         labelName: bottle.labelName,
         funName: bottle.funName || null,
         price: Math.round(bottle.price * 100), // Convert to cents
-        roundIndex: bottle.roundIndex ?? null,
+        roundIndex: null,
       }));
       
       await storage.createBottles(bottles);
