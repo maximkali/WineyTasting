@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, X, ArrowLeft } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/hooks/use-game";
@@ -234,20 +234,32 @@ export default function Organize() {
 
   // Game data using the hook
   const { data: gameData, isLoading, isError } = useGame(gameId!);
+
+  // Fetch bottles data separately
+  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+    queryKey: [`/api/games/${gameId}/bottles`],
+    enabled: !!gameId && !!hostToken,
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
+        headers: { Authorization: `Bearer ${hostToken}` },
+      });
+      return response.json();
+    },
+  });
   
   const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
 
-  // Update wines state when game data changes
+  // Update wines state when bottles data changes
   useEffect(() => {
-    if (gameData?.bottles) {
-      console.log("Setting up", gameData.game.totalRounds, "rounds with", gameData.bottles.length, "bottles");
+    if (bottlesData?.bottles && gameData?.game) {
+      console.log("Setting up", gameData.game.totalRounds, "rounds with", bottlesData.bottles.length, "bottles");
       
-      const wineData: Wine[] = gameData.bottles.map((bottle: any, index: number) => ({
+      const wineData: Wine[] = bottlesData.bottles.map((bottle: any, index: number) => ({
         id: bottle.id,
         labelName: bottle.labelName,
         funName: bottle.funName,
-        price: bottle.price,
+        price: bottle.price / 100, // Convert cents back to dollars for display
         originalIndex: index
       }));
       
@@ -258,7 +270,7 @@ export default function Organize() {
       
       // Organize wines into rounds based on their roundIndex
       wineData.forEach(wine => {
-        const bottle = gameData.bottles.find((b: any) => b.id === wine.id);
+        const bottle = bottlesData.bottles.find((b: any) => b.id === wine.id);
         if (bottle && bottle.roundIndex !== null && bottle.roundIndex >= 0) {
           if (newRounds[bottle.roundIndex]) {
             newRounds[bottle.roundIndex].push(wine);
@@ -268,7 +280,7 @@ export default function Organize() {
       
       setRounds(newRounds);
     }
-  }, [gameData]);
+  }, [bottlesData, gameData]);
 
   // Calculate unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
@@ -496,7 +508,7 @@ export default function Organize() {
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading || bottlesLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading game data</div>;
   if (!gameData) return <div>Game not found</div>;
 
