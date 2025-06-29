@@ -39,27 +39,27 @@ function SortableWine({ wine, index }: SortableWineProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 bg-white border rounded-lg ${
+      className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white border rounded-lg touch-manipulation ${
         isDragging ? "shadow-lg" : ""
       }`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing"
+        className="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 md:p-0"
       >
-        <GripVertical className="h-5 w-5 text-gray-400" />
+        <GripVertical className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
       </div>
-      <div className="flex-shrink-0 w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold">
+      <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs md:text-sm font-bold">
         {String.fromCharCode(65 + index)}
       </div>
-      <div className="flex-1">
-        <div className="font-medium">{wine.labelName}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm md:text-base truncate">{wine.labelName}</div>
         {wine.funName && (
-          <div className="text-sm text-gray-500">{wine.funName}</div>
+          <div className="text-xs md:text-sm text-gray-500 truncate">{wine.funName}</div>
         )}
       </div>
-      <div className="text-sm font-medium">${wine.price}</div>
+      <div className="text-xs md:text-sm font-medium flex-shrink-0">${wine.price}</div>
     </div>
   );
 }
@@ -73,22 +73,22 @@ interface RoundCardProps {
 
 function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
   return (
-    <Card className="min-h-[300px]">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <Card className="min-h-[250px] md:min-h-[300px]">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-base md:text-lg">
           <span>Round {round + 1}</span>
-          <Badge variant={wines.length === bottlesPerRound ? "default" : "secondary"}>
-            {wines.length}/{bottlesPerRound} wines
+          <Badge variant={wines.length === bottlesPerRound ? "default" : "secondary"} className="text-xs">
+            {wines.length}/{bottlesPerRound}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 min-h-[200px]">
+        <div className="space-y-2 min-h-[150px] md:min-h-[200px]">
           {wines.map((wine, index) => (
             <SortableWine key={wine.id} wine={wine} index={index} />
           ))}
           {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-gray-400 py-6 md:py-8 text-sm">
               Drag wines here
             </div>
           )}
@@ -262,10 +262,10 @@ export default function Organize() {
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
-      <div className="container max-w-7xl mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 space-y-4">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">Organize Wine Rounds</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Organize Wine Rounds</h1>
+          <p className="text-gray-600 text-sm md:text-base">
             Drag and drop wines to organize them into {totalRounds} rounds of {bottlesPerRound} wines each
           </p>
         </div>
@@ -275,61 +275,63 @@ export default function Organize() {
           collisionDetection={closestCorners}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Unassigned Wines */}
-            <div className="lg:col-span-1">
-              <Card className="min-h-[400px]">
-                <CardHeader>
-                  <CardTitle>
-                    Available Wines
-                    <Badge variant="secondary" className="ml-2">
-                      {unassignedWines.length} remaining
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+          {/* Mobile-first layout */}
+          <div className="space-y-4">
+            {/* Available Wines - Always at top on mobile */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-lg">
+                  <span>Available Wines</span>
+                  <Badge variant="secondary">
+                    {unassignedWines.length} remaining
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SortableContext 
+                  items={unassignedWines.map(w => w.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2 max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
+                    {unassignedWines.map((wine, index) => (
+                      <SortableWine key={wine.id} wine={wine} index={index} />
+                    ))}
+                    {unassignedWines.length === 0 && (
+                      <div className="text-center text-gray-400 py-4">
+                        All wines assigned
+                      </div>
+                    )}
+                  </div>
+                </SortableContext>
+              </CardContent>
+            </Card>
+
+            {/* Rounds - Stack vertically on mobile, grid on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {rounds.map((roundWines, roundIndex) => (
+                <div key={roundIndex} id={`round-${roundIndex}`}>
                   <SortableContext 
-                    items={unassignedWines.map(w => w.id)}
+                    items={roundWines.map(w => w.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-2" id="unassigned">
-                      {unassignedWines.map((wine, index) => (
-                        <SortableWine key={wine.id} wine={wine} index={index} />
-                      ))}
-                    </div>
+                    <RoundCard
+                      round={roundIndex}
+                      wines={roundWines}
+                      onDrop={() => {}}
+                      bottlesPerRound={bottlesPerRound}
+                    />
                   </SortableContext>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Rounds */}
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {rounds.map((roundWines, roundIndex) => (
-                  <div key={roundIndex} id={`round-${roundIndex}`}>
-                    <SortableContext 
-                      items={roundWines.map(w => w.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <RoundCard
-                        round={roundIndex}
-                        wines={roundWines}
-                        onDrop={() => {}}
-                        bottlesPerRound={bottlesPerRound}
-                      />
-                    </SortableContext>
-                  </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="text-center pt-6">
+          <div className="text-center pt-6 pb-4">
             <Button
               onClick={handleFinalize}
               disabled={finalizeMutation.isPending}
               size="lg"
-              className="px-8"
+              className="px-6 py-3 w-full md:w-auto"
             >
               {finalizeMutation.isPending ? "Finalizing..." : "🎯 Finalize Rounds & Start Game"}
             </Button>
