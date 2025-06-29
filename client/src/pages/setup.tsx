@@ -277,7 +277,7 @@ export default function Setup() {
         </div>
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Hey {gameData?.players?.find(p => p.isHost)?.displayName?.split(' ')[0] || 'there'} – let's design your blind tasting!</h1>
-          <p className="text-muted-foreground">Pick your core settings below, then enter each bottle’s label, fun alias, price, and serving round. You can edit any of it later.</p>
+          <p className="text-muted-foreground">Choose the player, bottle, and round counts below, then click Next. On the following screen you’ll log each wine – label name, blind-tasting nickname, MSRP, and its round. Need to change something? Edit or reorder anything before you hit Start.</p>
         </div>
 
         <Card>
