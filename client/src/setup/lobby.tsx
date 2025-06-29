@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent } from "@/common/ui/card";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useGame } from "@/hooks/use-game";
-import AdminPanel from "@/components/admin-panel";
+import { apiRequest } from "@/common/lib/queryClient";
+import { useToast } from "@/common/hooks/use-toast";
+import { useGame } from "@/common/hooks/use-game";
+import AdminPanel from "@/setup/admin-panel";
 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();

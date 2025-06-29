@@ -1,11 +1,11 @@
 import { useParams, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent } from "@/common/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { useGame } from "@/hooks/use-game";
-import { formatPrice, copyToClipboard } from "@/lib/game-utils";
-import Leaderboard from "@/components/leaderboard";
+import { useToast } from "@/common/hooks/use-toast";
+import { useGame } from "@/common/hooks/use-game";
+import { formatPrice, copyToClipboard } from "@/common/lib/game-utils";
+import Leaderboard from "@/gameplay/leaderboard";
 
 export default function Final() {
   const { gameId } = useParams<{ gameId: string }>();

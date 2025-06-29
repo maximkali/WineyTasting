@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/common/ui/button";
 import { Wine, Trophy, BarChart3, CheckCircle2 } from "lucide-react";
 
 export default function Home() {

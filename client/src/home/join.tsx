@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent } from "@/common/ui/card";
+import { Input } from "@/common/ui/input";
+import { Label } from "@/common/ui/label";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/common/lib/queryClient";
+import { useToast } from "@/common/hooks/use-toast";
 
 export default function Join() {
   const { gameId } = useParams<{ gameId: string }>();

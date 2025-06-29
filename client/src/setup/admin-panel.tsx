@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/common/ui/button";
+import { Card, CardContent } from "@/common/ui/card";
+import { Progress } from "@/common/ui/progress";
 import { Settings, Users, BarChart3, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useGame } from "@/hooks/use-game";
+import { apiRequest } from "@/common/lib/queryClient";
+import { useToast } from "@/common/hooks/use-toast";
+import { useGame } from "@/common/hooks/use-game";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/common/ui/dialog";
 
 interface AdminPanelProps {
   gameId: string;
