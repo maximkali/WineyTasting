@@ -61,20 +61,20 @@ function SortableWine({ wine, index }: SortableWineProps) {
         
         {/* Wine info in the center - takes up available space */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-gray-900 leading-tight truncate">
+          <div className="font-medium text-xs text-gray-900 leading-tight truncate">
             {wine.labelName}
           </div>
           {wine.funName && (
-            <div className="text-xs text-gray-600 mt-1 italic truncate">
+            <div className="text-xs text-gray-600 leading-tight truncate">
               "{wine.funName}"
             </div>
           )}
         </div>
         
         {/* Price and drag handle on the right */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-lg font-bold text-wine">${wine.price}</span>
-          <GripVertical className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-sm font-bold text-wine">${wine.price}</span>
+          <GripVertical className="h-3 w-3 text-gray-400" />
         </div>
       </div>
     </div>
@@ -113,16 +113,16 @@ function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
           items={wines.map(w => w.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
-            {wines.length === 0 && (
-              <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                All wines assigned to rounds
-              </div>
-            )}
           </div>
+          {wines.length === 0 && (
+            <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
+              All wines assigned to rounds
+            </div>
+          )}
         </SortableContext>
       </CardContent>
     </Card>
