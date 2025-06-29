@@ -19,6 +19,9 @@ export const games = pgTable("games", {
   bottlesPerRound: integer("bottles_per_round"),
   bottleEqPerPerson: integer("bottle_eq_per_person"), // Store as integer (multiplied by 100)
   ozPerPersonPerBottle: integer("oz_per_person_per_bottle"), // Store as integer (multiplied by 100)
+  // Data protection
+  winesLocked: boolean("wines_locked").default(false),
+  roundsLocked: boolean("rounds_locked").default(false)
 });
 
 export const bottles = pgTable("bottles", {

@@ -288,6 +288,9 @@ export default function Setup() {
     }
   }
 
+  // Check if wines are locked
+  const winesLocked = gameData?.game?.winesLocked || false;
+
   const updateBottle = (index: number, field: keyof typeof bottles[0], value: string) => {
     setBottles(prev => prev.map((bottle, i) => 
       i === index ? { ...bottle, [field]: value } : bottle
@@ -632,18 +635,27 @@ export default function Setup() {
           )}
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex gap-4">
-            <Button onClick={fillSampleWines} variant="outline" className="flex-1">
-              Fill Sample Wines
-            </Button>
-            <Button 
-              onClick={addBottle} 
-              disabled={!selectedConfig || bottles.length >= selectedConfig.bottles} 
-              className="flex-1"
-            >
-              Add Another Bottle
-            </Button>
-          </div>
+          {!winesLocked && (
+            <div className="flex gap-4">
+              <Button onClick={fillSampleWines} variant="outline" className="flex-1">
+                Fill Sample Wines
+              </Button>
+              <Button 
+                onClick={addBottle} 
+                disabled={!selectedConfig || bottles.length >= selectedConfig.bottles} 
+                className="flex-1"
+              >
+                Add Another Bottle
+              </Button>
+            </div>
+          )}
+          
+          {winesLocked && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 text-center">
+              <p className="text-green-800 font-medium">✅ Wines Finalized</p>
+              <p className="text-sm text-green-600 mt-1">Your wine list has been saved and locked. Proceed to rounds organization.</p>
+            </div>
+          )}
 
           <div className="space-y-3">
             {bottles.map((bottle, index) => (
@@ -658,6 +670,7 @@ export default function Setup() {
                     value={bottle.labelName}
                     onChange={(e) => updateBottle(index, "labelName", e.target.value)}
                     placeholder="e.g., Château Margaux 2019"
+                    disabled={winesLocked}
                   />
                 </div>
                 <div className="flex-1">
@@ -667,6 +680,7 @@ export default function Setup() {
                     value={bottle.funName}
                     onChange={(e) => updateBottle(index, "funName", e.target.value)}
                     placeholder="e.g., The Midnight Velvet"
+                    disabled={winesLocked}
                   />
                 </div>
                 <div className="w-32">
@@ -677,35 +691,51 @@ export default function Setup() {
                     value={bottle.price}
                     onChange={(e) => updateBottle(index, "price", e.target.value)}
                     placeholder="450"
+                    disabled={winesLocked}
                   />
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => removeBottle(index)}
-                  className="mt-6"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {!winesLocked && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeBottle(index)}
+                    className="mt-6"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="flex gap-4">
-            <Button 
-              onClick={handleWineSubmit} 
-              disabled={addBottlesMutation.isPending}
-              className="flex-1"
-            >
-              {addBottlesMutation.isPending ? (
-                "Saving..."
-              ) : (
-                <>
-                  💾 Save & Continue
-                </>
-              )}
-            </Button>
-          </div>
+          {!winesLocked && (
+            <div className="flex gap-4">
+              <Button 
+                onClick={handleWineSubmit} 
+                disabled={addBottlesMutation.isPending}
+                className="flex-1"
+              >
+                {addBottlesMutation.isPending ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    💾 Save & Continue
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+          
+          {winesLocked && (
+            <div className="flex gap-4">
+              <Button 
+                onClick={() => setLocation(`/rounds/${gameId}`)}
+                className="flex-1"
+              >
+                Go to Rounds Organization →
+              </Button>
+            </div>
+          )}
 
           {selectedConfig && bottles.length > 0 && bottles.length < selectedConfig.bottles && (
             <div className="text-center">

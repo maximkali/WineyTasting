@@ -25,9 +25,10 @@ interface WineTileProps {
   wine: Wine;
   index: number;
   onRemove?: () => void;
+  disabled?: boolean;
 }
 
-function WineTile({ wine, index, onRemove }: WineTileProps) {
+function WineTile({ wine, index, onRemove, disabled = false }: WineTileProps) {
   return (
     <div className="flex items-center justify-between py-3 px-1">
       <div className="flex items-center gap-3">
@@ -41,7 +42,7 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-gray-900">{formatPrice(wine.price)}</span>
-        {onRemove && (
+        {onRemove && !disabled && (
           <button
             onClick={onRemove}
             className="text-gray-400 hover:text-red-500 transition-colors p-1"
@@ -61,9 +62,10 @@ interface RoundCardProps {
   availableWines: Wine[];
   onAddWines: (roundIndex: number, wineIds: string[]) => void;
   onRemoveWine: (roundIndex: number, wineId: string) => void;
+  disabled?: boolean;
 }
 
-function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, onRemoveWine }: RoundCardProps) {
+function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, onRemoveWine, disabled = false }: RoundCardProps) {
   const [selectedWines, setSelectedWines] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -117,12 +119,13 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
                 wine={wine}
                 index={wine.originalIndex !== undefined ? wine.originalIndex : wines.findIndex(w => w.id === wine.id)}
                 onRemove={() => onRemoveWine(round, wine.id)}
+                disabled={disabled}
               />
             ))}
           </div>
         )}
         
-        {wines.length < bottlesPerRound && availableWines.length > 0 && (
+        {wines.length < bottlesPerRound && availableWines.length > 0 && !disabled && (
           <div className="mt-4">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -243,6 +246,9 @@ export default function Rounds() {
       setRounds(Array(totalRounds).fill(null).map(() => []));
     }
   }, [bottlesData, gameData]);
+
+  // Check if rounds are locked
+  const roundsLocked = gameData?.game?.roundsLocked || false;
 
   // Get unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
@@ -429,37 +435,46 @@ export default function Rounds() {
         </div>
 
         {/* Action buttons */}
-        <div className="mb-6 flex flex-wrap gap-2 justify-center">
-          <Button
-            onClick={handleAutoAssign}
-            disabled={unassignedWines.length === 0}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Shuffle className="h-4 w-4" />
-            Auto-Assign
-          </Button>
-          <Button
-            onClick={handleMixEmUp}
-            disabled={rounds.flat().length === 0}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Shuffle className="h-4 w-4" />
-            Mix 'Em Up
-          </Button>
-          <Button
-            onClick={handleReset}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset
-          </Button>
-        </div>
+        {!roundsLocked && (
+          <div className="mb-6 flex flex-wrap gap-2 justify-center">
+            <Button
+              onClick={handleAutoAssign}
+              disabled={unassignedWines.length === 0}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Shuffle className="h-4 w-4" />
+              Auto-Assign
+            </Button>
+            <Button
+              onClick={handleMixEmUp}
+              disabled={rounds.flat().length === 0}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Shuffle className="h-4 w-4" />
+              Mix 'Em Up
+            </Button>
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset
+            </Button>
+          </div>
+        )}
+        
+        {roundsLocked && (
+          <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-lg p-6 text-center">
+            <p className="text-green-800 font-medium">✅ Rounds Finalized</p>
+            <p className="text-sm text-green-600 mt-1">Your wine rounds have been organized and locked. Ready to start the game!</p>
+          </div>
+        )}
 
         {/* Rounds grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -472,6 +487,7 @@ export default function Rounds() {
               availableWines={unassignedWines}
               onAddWines={handleAddWines}
               onRemoveWine={handleRemoveWine}
+              disabled={roundsLocked}
             />
           ))}
         </div>
@@ -504,22 +520,36 @@ export default function Rounds() {
         )}
 
         {/* Save button */}
-        <div className="flex justify-center">
-          <Button
-            onClick={handleSave}
-            disabled={unassignedWines.length > 0 || saveRoundsMutation.isPending}
-            size="lg"
-            className="min-w-[200px]"
-          >
-            {saveRoundsMutation.isPending ? (
-              "Saving..."
-            ) : (
-              <>
-                💾 Save & Continue
-              </>
-            )}
-          </Button>
-        </div>
+        {!roundsLocked && (
+          <div className="flex justify-center">
+            <Button
+              onClick={handleSave}
+              disabled={unassignedWines.length > 0 || saveRoundsMutation.isPending}
+              size="lg"
+              className="min-w-[200px]"
+            >
+              {saveRoundsMutation.isPending ? (
+                "Saving..."
+              ) : (
+                <>
+                  💾 Save & Continue
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        
+        {roundsLocked && (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => navigate(`/lobby/${gameId}`)}
+              size="lg"
+              className="min-w-[200px]"
+            >
+              Proceed to Game Lobby →
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

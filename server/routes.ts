@@ -231,6 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.createBottles(bottles);
       
+      // Lock wines to prevent further editing
+      await storage.updateGame(gameId, { winesLocked: true });
+      
       res.json({ bottles });
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
@@ -395,6 +398,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateBottle(bottleId, { roundIndex });
         }
       }
+      
+      // Lock rounds to prevent further editing
+      await storage.updateGame(gameId, { roundsLocked: true });
       
       res.json({ success: true });
     } catch (error) {
