@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Settings, Users, Wine, RotateCcw } from "lucide-react";
+import WineyHeader from "@/components/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -259,7 +260,9 @@ export default function Setup() {
 
   if (configurationStep === 'config') {
     return (
-      <div className="container max-w-2xl mx-auto p-6 space-y-6">
+      <div className="min-h-screen bg-gray-50">
+        <WineyHeader />
+        <div className="container max-w-2xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Let's set up your tasting adventure!</h1>
           <p className="text-muted-foreground">
@@ -399,6 +402,7 @@ export default function Setup() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
@@ -407,7 +411,9 @@ export default function Setup() {
   const canRandomize = selectedConfig && gameData.bottleCount === selectedConfig.bottles;
 
   return (
-    <div className="container max-w-4xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <WineyHeader />
+      <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -514,6 +520,7 @@ export default function Setup() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import WineyHeader from "@/components/winey-header";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -54,13 +55,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-wine mb-4">🍷 WINEY
-</h1>
-          <p className="text-xl text-gray-600">The ultimate wine tasting game competition</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <WineyHeader />
+      <div className="flex items-center justify-center px-4 py-16">
+        <div className="max-w-md w-full">
 
         <Card className="shadow-xl">
           <CardContent className="p-6">
@@ -88,7 +86,7 @@ export default function Home() {
                 disabled={createGameMutation.isPending || hostName.trim().length < 3}
                 className="w-full wine-gradient text-white py-3 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
-                {createGameMutation.isPending ? "Creating..." : "🍷 Create Wine Game"}
+                {createGameMutation.isPending ? "Creating..." : "🍷 Let's Get Started!"}
               </Button>
             </div>
 
@@ -116,6 +114,7 @@ export default function Home() {
 
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>🍷 Taste • Rank • Score • Win 🏆</p>
+        </div>
         </div>
       </div>
     </div>
