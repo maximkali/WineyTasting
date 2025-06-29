@@ -133,30 +133,24 @@ export default function Organize() {
   // Fetch game data using the hook
   const { data: gameData, isLoading, error } = useGame(gameId!);
 
-  // Fetch bottles
-  const { data: bottlesData } = useQuery({
-    queryKey: ["/api/games", gameId, "bottles"],
-    queryFn: () => apiRequest("GET", `/api/games/${gameId}/bottles`).then(res => res.json()),
-    enabled: !!gameId,
-  });
-
   const [rounds, setRounds] = useState<any[][]>([]);
   const [unassignedWines, setUnassignedWines] = useState<any[]>([]);
 
   // Initialize rounds when game data is available
   useEffect(() => {
-    if (gameData?.game && bottlesData?.bottles) {
+    if (gameData?.game?.bottles) {
       const totalRounds = gameData.game.totalRounds || 4;
-      const bottlesPerRound = gameData.game.bottlesPerRound || 4;
+      
+      console.log("Initializing with", totalRounds, "rounds and", gameData.game.bottles.length, "bottles");
       
       // Initialize empty rounds
       const emptyRounds = Array(totalRounds).fill(null).map(() => []);
       setRounds(emptyRounds);
       
       // Set all bottles as unassigned initially
-      setUnassignedWines([...bottlesData.bottles]);
+      setUnassignedWines([...gameData.game.bottles]);
     }
-  }, [gameData, bottlesData]);
+  }, [gameData]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
