@@ -1,340 +1,397 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Users, Wine } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { Trash2, Settings, Users, Wine, RotateCcw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useGame } from "@/hooks/use-game";
 import { 
   getUniquePlayerCounts, 
-  getBottleOptionsForPlayers,
+  getBottleOptionsForPlayers, 
+  getRoundOptions,
   type GameSetupOption 
-} from "@/../../shared/game-setups";
+} from "@shared/game-setups";
+
+interface BottleData {
+  labelName: string;
+  funName: string;
+  price: string;
+}
 
 export default function Setup() {
+  const { gameId } = useParams<{ gameId: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [hostName, setHostName] = useState("");
-  const [configStep, setConfigStep] = useState<'host' | 'config' | 'review'>('host');
-  const [selectedConfig, setSelectedConfig] = useState<GameSetupOption | null>(null);
-  const [isCreatingGame, setIsCreatingGame] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: gameData, isLoading } = useGame(gameId!);
+  
+  const [bottles, setBottles] = useState<BottleData[]>(
+    Array(20).fill(null).map(() => ({ labelName: "", funName: "", price: "" }))
+  );
 
-  const playerOptions = getUniquePlayerCounts();
+  const hostToken = localStorage.getItem("hostToken");
 
-  const createGameMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedConfig) {
-        throw new Error("Please complete the game configuration");
-      }
-      
-      const response = await apiRequest("POST", "/api/games", {
-        hostDisplayName: hostName.trim(),
-        maxPlayers: selectedConfig.players,
-        totalBottles: selectedConfig.bottles,
-        totalRounds: selectedConfig.rounds,
-        bottlesPerRound: selectedConfig.bottlesPerRound,
-        bottleEqPerPerson: selectedConfig.bottleEqPerPerson,
-        ozPerPersonPerBottle: selectedConfig.ozPerPersonPerBottle,
+  useEffect(() => {
+    if (!hostToken) {
+      setLocation("/");
+    }
+  }, [hostToken, setLocation]);
+
+  const addBottlesMutation = useMutation({
+    mutationFn: async (bottlesData: any[]) => {
+      const res = await apiRequest("POST", `/api/games/${gameId}/bottles`, {
+        bottles: bottlesData,
+      }, {
+        headers: { Authorization: `Bearer ${hostToken}` },
       });
-      return response.json();
+      return res.json();
     },
-    onSuccess: (data) => {
-      // Store the host token
-      sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
       toast({
-        title: "Game created successfully!",
-        description: `Game ID: ${data.game.id} - Now add your wines!`,
+        title: "Success",
+        description: "Wines added successfully!",
       });
-      
-      // Navigate to the organize page with the game ID
-      setLocation(`/organize/${data.game.id}`);
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating game",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to add wines",
         variant: "destructive",
       });
-      setIsCreatingGame(false);
     },
   });
 
-  const handleHostNameSubmit = () => {
-    if (!hostName.trim()) {
+  const randomizeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/games/${gameId}/randomize`, {}, {
+        headers: { Authorization: `Bearer ${hostToken}` },
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
       toast({
-        title: "Name required",
-        description: "Please enter your name to continue.",
+        title: "Success",
+        description: "Wines randomized into rounds!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to randomize wines",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateBottle = (index: number, field: keyof BottleData, value: string) => {
+    setBottles(prev => prev.map((bottle, i) => 
+      i === index ? { ...bottle, [field]: value } : bottle
+    ));
+  };
+
+  const deleteBottle = (index: number) => {
+    setBottles(prev => prev.map((bottle, i) => 
+      i === index ? { labelName: "", funName: "", price: "" } : bottle
+    ));
+  };
+
+  const fillSampleWines = () => {
+    const sampleWines = [
+      { labelName: "Obama Napa Valley Cabernet", funName: "Presidential Punch", price: "85" },
+      { labelName: "Château Margaux 2010", funName: "Fancy French Flex", price: "450" },
+      { labelName: "Two Buck Chuck", funName: "Wallet Warrior", price: "3" },
+      { labelName: "Kendall-Jackson Vintner's Reserve", funName: "Grape Expectations", price: "25" },
+      { labelName: "Dom Pérignon 2012", funName: "Liquid Gold", price: "300" },
+      { labelName: "Opus One 2018", funName: "Vintage Vibes", price: "250" },
+      { labelName: "Yellowtail Shiraz", funName: "Kangaroo Kicks", price: "8" },
+      { labelName: "Screaming Eagle Cabernet", funName: "Eagle's Cry", price: "2500" },
+      { labelName: "Barefoot Moscato", funName: "Barefoot Bliss", price: "7" },
+      { labelName: "Caymus Cabernet", funName: "California Dreams", price: "90" },
+      { labelName: "Bogle Phantom", funName: "Ghost Wine", price: "18" },
+      { labelName: "Silver Oak Alexander Valley", funName: "Silver Bullet", price: "120" },
+      { labelName: "Kendall-Jackson Chardonnay", funName: "Buttery Smooth", price: "22" },
+      { labelName: "La Crema Pinot Noir", funName: "Velvet Touch", price: "28" },
+      { labelName: "Prisoner Red Blend", funName: "Jailbird Special", price: "45" },
+      { labelName: "Duckhorn Merlot", funName: "Duck Dynasty", price: "65" },
+      { labelName: "Stag's Leap Artemis", funName: "Leaping Stag", price: "75" },
+      { labelName: "Far Niente Chardonnay", funName: "Nothing Matters", price: "55" },
+      { labelName: "Cakebread Cellars Chardonnay", funName: "Sweet Bread", price: "48" },
+      { labelName: "Jordan Cabernet Sauvignon", funName: "His Airness", price: "95" },
+    ];
+    setBottles(sampleWines);
+  };
+
+  const validateAndSubmit = () => {
+    const filledBottles = bottles.filter(b => 
+      b.labelName.trim() && b.price.trim()
+    );
+
+    if (filledBottles.length !== 20) {
+      toast({
+        title: "Incomplete",
+        description: "Please enter all 20 wines with label names and prices.",
         variant: "destructive",
       });
       return;
     }
-    setConfigStep('config');
-  };
 
-  const handleConfigSubmit = () => {
-    if (!selectedConfig) {
+    // Check for unique prices
+    const prices = filledBottles.map(b => parseInt(b.price));
+    if (new Set(prices).size !== prices.length) {
       toast({
-        title: "Configuration required",
-        description: "Please select your game configuration.",
+        title: "Duplicate Prices",
+        description: "All wine prices must be unique.",
         variant: "destructive",
       });
       return;
     }
-    setConfigStep('review');
+
+    // Check for unique label names
+    const labelNames = filledBottles.map(b => b.labelName.toLowerCase().trim());
+    if (new Set(labelNames).size !== labelNames.length) {
+      toast({
+        title: "Duplicate Names",
+        description: "All label names must be unique.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const bottlesData = filledBottles.map(bottle => ({
+      labelName: bottle.labelName.trim(),
+      funName: bottle.funName.trim() || undefined,
+      price: parseInt(bottle.price),
+    }));
+
+    addBottlesMutation.mutate(bottlesData);
   };
 
-  const handleFinalSubmit = () => {
-    setIsCreatingGame(true);
-    createGameMutation.mutate();
+  const handleRandomize = () => {
+    randomizeMutation.mutate();
   };
 
-  // Host Name Step
-  if (configStep === 'host') {
+  const generateGameLink = () => {
+    if (gameData?.game?.status === 'lobby') {
+      const gameUrl = `${window.location.origin}/join/${gameId}`;
+      navigator.clipboard.writeText(gameUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Game link copied to clipboard",
+      });
+      setLocation(`/lobby/${gameId}`);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-warm-white">
-        <div className="max-w-lg mx-auto p-4">
-          {/* Header */}
-          <div className="text-center mb-8 mt-6">
-            <h1 className="text-4xl font-bold text-wine mb-2">🍷 Winey</h1>
-            <p className="text-lg text-gray-600">Let's set up your wine tasting game!</p>
-          </div>
+      <div className="min-h-screen bg-warm-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🍷</div>
+          <p className="text-gray-600">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
 
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-wine mb-2">
-                Welcome, Host!
-              </CardTitle>
-              <p className="text-gray-600">
-                What should we call you during the game?
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="hostName">Your Name</Label>
-                <Input
-                  id="hostName"
-                  type="text"
-                  placeholder="Enter your name (e.g., Sarah)"
-                  value={hostName}
-                  onChange={(e) => setHostName(e.target.value)}
-                  maxLength={30}
-                  className="text-lg"
-                />
+  if (!gameData?.game) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="text-4xl mb-4">❌</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Game Not Found
+            </h1>
+            <Button onClick={() => setLocation("/")} className="wine-gradient text-white">
+              🍷 Return Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const completedBottles = bottles.filter(b => b.labelName.trim() && b.price.trim()).length;
+  const hasBottles = gameData.bottles && gameData.bottles.length > 0;
+  const canRandomize = hasBottles && gameData.game.status === 'setup';
+  const isRandomized = gameData.game.status === 'lobby';
+
+  return (
+    <div className="min-h-screen bg-warm-white">
+      <div className="max-w-4xl mx-auto p-4">
+        {/* Header */}
+        <div className="text-center mb-8 mt-6">
+          <h1 className="text-4xl font-bold text-wine mb-2">🍷 Winey</h1>
+          <p className="text-lg text-gray-600">Create your wine tasting game</p>
+        </div>
+
+        {/* Host Info */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Game Host</h2>
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 wine-gradient rounded-full flex items-center justify-center text-white font-bold">
+                {gameData.players.find(p => p.isHost)?.displayName?.[0] || "H"}
               </div>
-              
-              <Button 
-                onClick={handleHostNameSubmit}
-                className="w-full wine-gradient text-white text-lg py-3"
-                disabled={!hostName.trim()}
-              >
-                Continue to Game Setup
-              </Button>
-              
+              <div>
+                <div className="text-lg font-medium text-wine">
+                  {gameData.players.find(p => p.isHost)?.displayName || "Host"}
+                </div>
+                <p className="text-sm text-gray-500">Game Host</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Wine Entry Form */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Wine Collection (20 bottles)</h2>
+              <span className="text-sm text-gray-500">
+                <span className="font-medium text-wine">{completedBottles}</span>/20 entered
+              </span>
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {bottles.map((bottle, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-3 p-4 bg-gray-50 rounded-xl items-center"
+                >
+                  <div className="md:col-span-1 text-sm font-medium text-gray-600">
+                    #{index + 1}
+                  </div>
+                  <div className="md:col-span-4">
+                    <Input
+                      placeholder="Label name (e.g., Obama)"
+                      value={bottle.labelName}
+                      onChange={(e) => updateBottle(index, "labelName", e.target.value)}
+                      maxLength={20}
+                    />
+                  </div>
+                  <div className="md:col-span-4">
+                    <Input
+                      placeholder="Fun name (optional)"
+                      value={bottle.funName}
+                      onChange={(e) => updateBottle(index, "funName", e.target.value)}
+                      maxLength={40}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Input
+                      type="number"
+                      placeholder="Price $"
+                      value={bottle.price}
+                      onChange={(e) => updateBottle(index, "price", e.target.value)}
+                      min="1"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteBottle(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-between">
               <Button
                 variant="outline"
-                className="w-full"
-                onClick={() => setLocation("/")}
+                onClick={fillSampleWines}
+                className="border-wine text-wine hover:bg-rose"
               >
-                Back to Home
+                🎲 Fill Sample Wines
               </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+              <Button
+                onClick={validateAndSubmit}
+                disabled={addBottlesMutation.isPending || hasBottles}
+                className="wine-gradient text-white hover:opacity-90"
+              >
+                {addBottlesMutation.isPending ? "Adding..." : "✅ Add Wines"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-  // Configuration Step
-  if (configStep === 'config') {
-    return (
-      <div className="min-h-screen bg-warm-white">
-        <div className="max-w-2xl mx-auto p-4">
-          {/* Header */}
-          <div className="text-center mb-8 mt-6">
-            <h1 className="text-4xl font-bold text-wine mb-2">🍷 Winey</h1>
-            <p className="text-lg text-gray-600">Configure your wine tasting game</p>
-          </div>
-
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-wine mb-2 flex items-center justify-center gap-2">
-                <Settings className="h-6 w-6" />
-                Game Configuration
-              </CardTitle>
-              <p className="text-gray-600">
-                Choose your game setup based on the number of players
+        {/* Randomization & Preview */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Round Assignment</h2>
+            <div className="mb-4">
+              <Button
+                onClick={handleRandomize}
+                disabled={!canRandomize || randomizeMutation.isPending}
+                className="w-full md:w-auto wine-gradient text-white hover:opacity-90"
+              >
+                {randomizeMutation.isPending ? "Randomizing..." : "🎲 Randomize into 5 Rounds"}
+              </Button>
+              <p className="text-sm text-gray-600 mt-2">
+                Assigns 4 wines to each of the 5 rounds randomly
               </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Player Count Selection */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-wine" />
-                  Number of Players
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {playerOptions.map((count) => (
-                    <Button
-                      key={count}
-                      variant={selectedConfig?.players === count ? "default" : "outline"}
-                      className={selectedConfig?.players === count ? "wine-gradient text-white" : ""}
-                      onClick={() => {
-                        const configs = getBottleOptionsForPlayers(count);
-                        setSelectedConfig(configs[0]); // Default to first option
-                      }}
-                    >
-                      {count} players
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            </div>
 
-              {/* Configuration Options */}
-              {selectedConfig && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Wine className="h-5 w-5 text-wine" />
-                    Game Format
-                  </h3>
-                  <div className="space-y-3">
-                    {getBottleOptionsForPlayers(selectedConfig.players).map((config, index) => (
-                      <div
-                        key={index}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          selectedConfig.bottles === config.bottles
-                            ? "border-wine bg-wine/5"
-                            : "border-gray-200 hover:border-wine/50"
-                        }`}
-                        onClick={() => setSelectedConfig(config)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-semibold text-wine">
-                              {config.bottles} Bottles • {config.rounds} Rounds
-                            </div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              {config.bottlesPerRound} bottles per round • {config.bottleEqPerPerson} bottle equivalents per person • {config.ozPerPersonPerBottle}oz per bottle per person
-                            </div>
+            {/* Round Preview Grid */}
+            {gameData.rounds && gameData.rounds.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {gameData.rounds.map((round, index) => (
+                  <div key={round.id} className="bg-sage rounded-lg p-4">
+                    <h3 className="font-medium text-center mb-3">Round {index + 1}</h3>
+                    <div className="space-y-2">
+                      {round.bottleIds.map((bottleId) => {
+                        const bottle = gameData.bottles.find(b => b.id === bottleId);
+                        return (
+                          <div key={bottleId} className="bg-white rounded p-2 text-sm">
+                            {bottle?.funName || bottle?.labelName || "Wine"}
                           </div>
-                          {selectedConfig.bottles === config.bottles && (
-                            <Badge className="wine-gradient text-white">Selected</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setConfigStep('host')}
-                  className="flex-1"
-                >
-                  Back
-                </Button>
-                <Button 
-                  onClick={handleConfigSubmit}
-                  className="flex-1 wine-gradient text-white"
-                  disabled={!selectedConfig}
-                >
-                  Review Setup
-                </Button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+            )}
+          </CardContent>
+        </Card>
 
-  // Review Step
-  if (configStep === 'review') {
-    return (
-      <div className="min-h-screen bg-warm-white">
-        <div className="max-w-2xl mx-auto p-4">
-          {/* Header */}
-          <div className="text-center mb-8 mt-6">
-            <h1 className="text-4xl font-bold text-wine mb-2">🍷 Winey</h1>
-            <p className="text-lg text-gray-600">Review your game setup</p>
-          </div>
-
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-wine mb-2">
-                Ready to Create Your Game?
-              </CardTitle>
-              <p className="text-gray-600">
-                Review the details below and create your wine tasting game
+        {/* Generate Game Link */}
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Start Game</h2>
+            <div className="space-y-4">
+              <Button
+                onClick={generateGameLink}
+                disabled={!isRandomized}
+                className="w-full wine-gradient text-white hover:opacity-90 disabled:opacity-50"
+              >
+                🍷 Generate Game Link
+              </Button>
+              <p className="text-sm text-gray-600 text-center">
+                {!hasBottles
+                  ? "Add wines first"
+                  : !isRandomized
+                  ? "Randomize wines into rounds first"
+                  : "Ready to start!"}
               </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Host Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-wine mb-2">Game Host</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 wine-gradient rounded-full flex items-center justify-center text-white font-bold">
-                    {hostName[0]?.toUpperCase()}
-                  </div>
-                  <div className="font-medium">{hostName}</div>
-                </div>
-              </div>
-
-              {/* Game Configuration */}
-              {selectedConfig && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-wine mb-3">Game Configuration</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-gray-700">Players</div>
-                      <div className="text-lg font-semibold text-wine">{selectedConfig.players}</div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-700">Total Bottles</div>
-                      <div className="text-lg font-semibold text-wine">{selectedConfig.bottles}</div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-700">Rounds</div>
-                      <div className="text-lg font-semibold text-wine">{selectedConfig.rounds}</div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-700">Bottles per Round</div>
-                      <div className="text-lg font-semibold text-wine">{selectedConfig.bottlesPerRound}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setConfigStep('config')}
-                  className="flex-1"
-                  disabled={isCreatingGame}
-                >
-                  Back to Setup
-                </Button>
-                <Button 
-                  onClick={handleFinalSubmit}
-                  className="flex-1 wine-gradient text-white"
-                  disabled={isCreatingGame}
-                >
-                  {isCreatingGame ? "Creating Game..." : "🍷 Create Game"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

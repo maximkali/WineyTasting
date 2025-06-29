@@ -1,9 +1,38 @@
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import WineyHeader from "@/components/winey-header";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [hostName, setHostName] = useState("");
+  const [showNameInput, setShowNameInput] = useState(false);
+
+  const createGameMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/games", {
+        hostDisplayName: hostName.trim()
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      localStorage.setItem("hostToken", data.hostToken);
+      setLocation(`/setup/${data.game.id}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating game",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -23,26 +52,82 @@ export default function Home() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
-            <Button
-              onClick={() => {
-                console.log("Host a Tasting clicked - navigating to setup");
-                setLocation("/setup");
-              }}
-              className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
-            >
-              Host a Tasting
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => {
-                const gameCode = prompt("Enter your game code:");
-                if (gameCode) {
-                  setLocation(`/join/${gameCode.toUpperCase()}`);
-                }
-              }}
-              className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
-            >Join Game</Button>
+            {!showNameInput ? (
+              <>
+                <Button
+                  onClick={() => setShowNameInput(true)}
+                  className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
+                >
+                  Host a Tasting
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const gameCode = prompt("Enter your game code:");
+                    if (gameCode) {
+                      setLocation(`/join/${gameCode.toUpperCase()}`);
+                    }
+                  }}
+                  className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
+                >Join Game</Button>
+              </>
+            ) : (
+              <Card className="w-full max-w-md">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="hostName" className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Name
+                      </label>
+                      <Input
+                        id="hostName"
+                        type="text"
+                        placeholder="Enter your name"
+                        value={hostName}
+                        onChange={(e) => setHostName(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && hostName.trim()) {
+                            createGameMutation.mutate();
+                          }
+                        }}
+                        className="w-full"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowNameInput(false);
+                          setHostName("");
+                        }}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (!hostName.trim()) {
+                            toast({
+                              title: "Name required",
+                              description: "Please enter your name to host a game.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          createGameMutation.mutate();
+                        }}
+                        disabled={createGameMutation.isPending}
+                        className="flex-1 bg-wine hover:bg-wine/90 text-white"
+                      >
+                        {createGameMutation.isPending ? "Creating..." : "Continue"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           
