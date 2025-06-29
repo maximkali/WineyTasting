@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import WineyHeader from "@/components/winey-header";
 
 export default function Home() {
@@ -13,46 +15,38 @@ export default function Home() {
   const [lastName, setLastName] = useState("");
   const { toast } = useToast();
 
-  // Generate temporary game ID for session storage
-  const generateTempGameId = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
+  const createGameMutation = useMutation({
+    mutationFn: async (displayName: string) => {
+      const res = await apiRequest("POST", "/api/games", { displayName });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Store host token for authentication
+      sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
+      setLocation(`/setup/${data.game.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCreateGame = () => {
-    try {
-      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-      
-      if (!firstName.trim() || !lastName.trim()) {
-        try {
-          toast({
-            title: "Please enter your name",
-            description: "Both first and last name are required.",
-            variant: "destructive",
-          });
-        } catch (toastError) {
-          alert("Please enter both first and last name");
-        }
-        return;
-      }
-
-      // Generate temporary game ID and store host info in session
-      const tempGameId = generateTempGameId();
-      const tempHostToken = Math.random().toString(36).substring(2, 32);
-      
-      sessionStorage.setItem(`tempGame_${tempGameId}`, JSON.stringify({
-        hostDisplayName: fullName,
-        gameId: tempGameId,
-        hostToken: tempHostToken,
-        created: new Date().toISOString(),
-        status: 'temp'
-      }));
-      
-
-      setLocation(`/setup/${tempGameId}`);
-    } catch (error) {
-      console.error("Error in handleCreateGame:", error);
-      alert("An error occurred. Please try again.");
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    
+    if (!firstName.trim() || !lastName.trim()) {
+      toast({
+        title: "Please enter your name",
+        description: "Both first and last name are required.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    createGameMutation.mutate(fullName);
   };
 
   const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,10 +94,10 @@ export default function Home() {
 
               <Button
                 onClick={handleCreateGame}
-                disabled={!firstName.trim() || !lastName.trim()}
+                disabled={!firstName.trim() || !lastName.trim() || createGameMutation.isPending}
                 className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
-                Let's Get Started!
+                {createGameMutation.isPending ? "Creating Game..." : "Let's Get Started!"}
               </Button>
             </div>
 
