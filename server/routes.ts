@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  createGameSchema, joinGameSchema, addBottlesSchema, 
+  createGameSchema, joinGameSchema, setGameConfigSchema, addBottlesSchema, 
   submitTastingSchema, submitGambitSchema 
 } from "@shared/schema";
 import { z } from "zod";
@@ -143,6 +143,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({ player });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
+    }
+  });
+
+  // Set game configuration
+  app.post("/api/games/:gameId/config", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const config = setGameConfigSchema.parse(req.body);
+      const hostToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      const game = await storage.getGame(gameId);
+      if (!game || game.hostToken !== hostToken) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      if (game.status !== 'setup') {
+        return res.status(400).json({ error: 'Game already started' });
+      }
+      
+      const updatedGame = await storage.updateGame(gameId, {
+        maxPlayers: config.maxPlayers,
+        totalBottles: config.totalBottles,
+        totalRounds: config.totalRounds,
+        bottlesPerRound: config.bottlesPerRound,
+        bottleEqPerPerson: Math.round(config.bottleEqPerPerson * 100), // Store as integer
+        ozPerPersonPerBottle: Math.round(config.ozPerPersonPerBottle * 100), // Store as integer
+      });
+      
+      res.json({ game: updatedGame });
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
     }

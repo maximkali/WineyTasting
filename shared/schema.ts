@@ -9,6 +9,13 @@ export const games = pgTable("games", {
   hostToken: text("host_token").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Game setup configuration
+  maxPlayers: integer("max_players"),
+  totalBottles: integer("total_bottles"),
+  totalRounds: integer("total_rounds"),
+  bottlesPerRound: integer("bottles_per_round"),
+  bottleEqPerPerson: integer("bottle_eq_per_person"), // Store as integer (multiplied by 100)
+  ozPerPersonPerBottle: integer("oz_per_person_per_bottle"), // Store as integer (multiplied by 100)
 });
 
 export const bottles = pgTable("bottles", {
@@ -106,12 +113,21 @@ export const joinGameSchema = z.object({
   displayName: z.string().min(3).max(15).optional(),
 });
 
+export const setGameConfigSchema = z.object({
+  maxPlayers: z.number().min(10).max(22),
+  totalBottles: z.number().min(9).max(20),
+  totalRounds: z.number().min(3).max(5),
+  bottlesPerRound: z.number().min(3).max(4),
+  bottleEqPerPerson: z.number().min(0.1).max(1.0),
+  ozPerPersonPerBottle: z.number().min(1.0).max(3.0),
+});
+
 export const addBottlesSchema = z.object({
   bottles: z.array(z.object({
     labelName: z.string().min(3).max(20),
     funName: z.string().max(40).optional(),
     price: z.number().min(1),
-  })).length(20),
+  })).min(9).max(20),
 });
 
 export const submitTastingSchema = z.object({
