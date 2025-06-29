@@ -1,7 +1,8 @@
 import { useLocation } from "wouter";
 
 import { Button } from "@/common/ui/button";
-import { Wine, Trophy, BarChart3, CheckCircle2 } from "lucide-react";
+import { Trophy, BarChart3, CheckCircle2 } from "lucide-react";
+import WineyHeader from "@/common/winey-header";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -14,17 +15,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="w-full py-6 px-4 bg-white border-b">
-        <div className="container max-w-6xl mx-auto flex items-center justify-center">
-          <div className="flex items-center space-x-2">
-            <Wine className="h-8 w-8 text-wine" />
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">WINEY</h1>
-              <p className="text-xs text-gray-600">The Ultimate Taste Test</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <WineyHeader />
 
       {/* Main Content */}
       <main className="flex-1 container max-w-4xl mx-auto px-4 py-16">
@@ -60,7 +51,7 @@ export default function Home() {
         <div className="grid md:grid-cols-4 gap-6 mt-20">
           <div className="text-center">
             <div className="mb-4">
-              <Wine className="h-12 w-12 mx-auto text-[#8B1A1A]" />
+              <div className="text-5xl">🍷</div>
             </div>
             <h3 className="font-semibold text-lg mb-2 text-gray-900">Blind Tasting</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -116,7 +107,7 @@ export default function Home() {
       <footer className="py-8 bg-gray-100 border-t">
         <div className="flex items-center justify-center space-x-4 text-gray-600 text-sm">
           <span className="flex items-center">
-            <Wine className="h-4 w-4 mr-2 text-[#8B1A1A]" />
+            <span className="mr-2 text-[#8B1A1A]">🍷</span>
             Sip
           </span>
           <span>→</span>
