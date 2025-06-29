@@ -17,7 +17,7 @@ export default function SetupSimple() {
 
   const createGameMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/games", { displayName: hostName });
+      const response = await apiRequest("POST", "/api/games", { hostDisplayName: hostName });
       return response.json();
     },
     onSuccess: (data) => {
