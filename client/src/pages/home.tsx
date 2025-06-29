@@ -15,13 +15,13 @@ export default function Home() {
           <Card className="shadow-xl">
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div>
-                  <Label className="text-base font-medium">Are you hosting a blind tasting?</Label>
+                <div className="text-center">
+                  <p className="text-sm text-gray-500">Are you hosting a blind tasting? Enter your...</p>
                 </div>
 
                 <Button
                   onClick={() => setLocation('/setup')}
-                  className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
+                  className="w-full bg-[#C17A8C] text-white py-3 rounded-full font-medium hover:bg-[#B06E80] transition-colors"
                 >
                   Let's Get Started!
                 </Button>
