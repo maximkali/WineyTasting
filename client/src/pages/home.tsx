@@ -8,13 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import WineyHeader from "@/components/winey-header";
 
 export default function Home() {
-  console.log("Home component rendering");
   const [, setLocation] = useLocation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const { toast } = useToast();
-  
-  console.log("Home state:", { firstName, lastName });
 
   // Generate temporary game ID for session storage
   const generateTempGameId = () => {
@@ -23,7 +20,6 @@ export default function Home() {
 
   const handleCreateGame = () => {
     try {
-      console.log("Create game clicked, current values:", { firstName, lastName });
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
       
       if (!firstName.trim() || !lastName.trim()) {
@@ -51,7 +47,7 @@ export default function Home() {
         status: 'temp'
       }));
       
-      console.log("Starting temporary game:", tempGameId);
+
       setLocation(`/setup/${tempGameId}`);
     } catch (error) {
       console.error("Error in handleCreateGame:", error);
@@ -60,21 +56,11 @@ export default function Home() {
   };
 
   const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      console.log("First name changing to:", e.target.value);
-      setFirstName(e.target.value);
-    } catch (error) {
-      console.error("Error changing first name:", error);
-    }
+    setFirstName(e.target.value);
   };
 
   const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      console.log("Last name changing to:", e.target.value);
-      setLastName(e.target.value);
-    } catch (error) {
-      console.error("Error changing last name:", error);
-    }
+    setLastName(e.target.value);
   };
 
   return (
