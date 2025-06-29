@@ -237,6 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ bottles });
     } catch (error) {
+      console.error('[DEBUG] Bottle creation error:', error);
       res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
     }
   });
