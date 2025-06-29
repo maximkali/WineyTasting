@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,8 +17,8 @@ export const games = pgTable("games", {
   totalBottles: integer("total_bottles"),
   totalRounds: integer("total_rounds"),
   bottlesPerRound: integer("bottles_per_round"),
-  bottleEqPerPerson: integer("bottle_eq_per_person"), // Store as integer (multiplied by 100)
-  ozPerPersonPerBottle: integer("oz_per_person_per_bottle"), // Store as integer (multiplied by 100)
+  bottleEqPerPerson: numeric("bottle_eq_per_person"), // Store as decimal
+  ozPerPersonPerBottle: numeric("oz_per_person_per_bottle"), // Store as decimal
   // Data protection
   winesLocked: boolean("wines_locked").default(false),
   roundsLocked: boolean("rounds_locked").default(false)
