@@ -368,14 +368,7 @@ export default function Setup() {
                   </div>
                 </div>
 
-                <div>
-                  <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
-                    Total Wine per Person:
-                  </div>
-                  <div className="text-lg">
-                    {(selectedConfig.bottleEqPerPerson * 25.36).toFixed(2)} oz ({(selectedConfig.bottleEqPerPerson * 100).toFixed(0)}% of 750ml bottle)
-                  </div>
-                </div>
+
 
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm leading-relaxed">
