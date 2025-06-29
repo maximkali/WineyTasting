@@ -438,7 +438,7 @@ export default function Setup() {
           <div className="space-y-3">
             {bottles.map((bottle, index) => (
               <div key={index} className="flex gap-3 items-center p-4 border rounded-lg">
-                <div className="flex-shrink-0 w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-sm font-medium">
+                <div className="flex-shrink-0 w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {index + 1}
                 </div>
                 <div className="flex-1">
