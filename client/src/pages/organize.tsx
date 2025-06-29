@@ -367,6 +367,34 @@ export default function Organize() {
     },
   });
 
+  // Auto-save functionality
+  useEffect(() => {
+    const saveTimeout = setTimeout(() => {
+      const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
+      if (totalAssigned > 0 && gameData?.game?.id) {
+        // Auto-save current state
+        const roundData = rounds.map((roundWines, roundIndex) => ({
+          roundIndex,
+          bottleIds: roundWines.map(w => w.id)
+        }));
+        
+        // Silent save (no toast notifications for auto-save)
+        apiRequest(`/api/games/${gameData.game.id}/bottles/organize`, {
+          method: "POST",
+          body: JSON.stringify({ rounds: roundData }),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${hostToken}`
+          }
+        }).catch(() => {
+          // Silent failure for auto-save
+        });
+      }
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(saveTimeout);
+  }, [rounds, gameData?.game?.id, hostToken]);
+
   const handleAddWinesToRound = (roundIndex: number, wineIds: string[]) => {
     setRounds(prev => {
       const newRounds = [...prev];
@@ -385,6 +413,50 @@ export default function Organize() {
   };
 
   const handleSaveOrganization = async () => {
+    // Validate organization before saving
+    const errors = [];
+    
+    // Check that all bottles are assigned
+    const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
+    if (totalAssigned !== wines.length) {
+      errors.push(`All ${wines.length} bottles must be assigned to rounds (${totalAssigned} currently assigned)`);
+    }
+    
+    // Check for correct bottles per round
+    if (gameData?.game?.bottlesPerRound) {
+      const expectedPerRound = gameData.game.bottlesPerRound;
+      rounds.forEach((round, index) => {
+        if (round.length !== expectedPerRound) {
+          errors.push(`Round ${index + 1} has ${round.length} bottles, expected ${expectedPerRound}`);
+        }
+      });
+    }
+    
+    // Check for duplicate assignments
+    const allAssignedIds = new Set();
+    const duplicates = [];
+    rounds.forEach((round) => {
+      round.forEach((wine) => {
+        if (allAssignedIds.has(wine.id)) {
+          duplicates.push(wine.labelName);
+        }
+        allAssignedIds.add(wine.id);
+      });
+    });
+    
+    if (duplicates.length > 0) {
+      errors.push(`Bottles assigned to multiple rounds: ${duplicates.join(", ")}`);
+    }
+    
+    if (errors.length > 0) {
+      toast({
+        title: "Organization Error",
+        description: errors.join(". "),
+        variant: "destructive",
+      });
+      return;
+    }
+
     const roundData = rounds.map((roundWines, roundIndex) => ({
       roundIndex,
       bottleIds: roundWines.map(w => w.id)

@@ -233,20 +233,48 @@ export default function Setup() {
   const handleWineSubmit = () => {
     if (!selectedConfig) return;
     
-    const validBottles = bottles.filter(b => 
-      b.labelName.trim() && b.price.trim() && !isNaN(parseFloat(b.price))
-    );
+    // Comprehensive validation
+    const errors = [];
     
-    if (validBottles.length !== selectedConfig.bottles) {
+    // Check for missing required fields
+    bottles.forEach((bottle, index) => {
+      if (!bottle.labelName.trim()) {
+        errors.push(`Wine ${String.fromCharCode(65 + index)}: Label name is required`);
+      }
+      if (!bottle.price.trim() || isNaN(parseFloat(bottle.price)) || parseFloat(bottle.price) <= 0) {
+        errors.push(`Wine ${String.fromCharCode(65 + index)}: Valid price is required`);
+      }
+    });
+
+    // Check for duplicate prices
+    const prices = bottles.map(b => parseFloat(b.price)).filter(p => !isNaN(p) && p > 0);
+    const uniquePrices = new Set(prices);
+    if (uniquePrices.size !== prices.length) {
+      errors.push("All wine prices must be unique");
+    }
+
+    // Check for duplicate label names (case insensitive)
+    const labelNames = bottles.map(b => b.labelName.trim().toLowerCase()).filter(n => n.length > 0);
+    const uniqueLabels = new Set(labelNames);
+    if (uniqueLabels.size !== labelNames.length) {
+      errors.push("All wine label names must be unique");
+    }
+
+    // Check correct number of bottles
+    if (bottles.length !== selectedConfig.bottles) {
+      errors.push(`Expected ${selectedConfig.bottles} bottles, but found ${bottles.length}`);
+    }
+
+    if (errors.length > 0) {
       toast({
-        title: "Error",
-        description: `Please enter exactly ${selectedConfig.bottles} valid wines with prices.`,
+        title: "Validation Error",
+        description: errors.join(". "),
         variant: "destructive",
       });
       return;
     }
 
-    const bottlesData = validBottles.map(bottle => ({
+    const bottlesData = bottles.map(bottle => ({
       labelName: bottle.labelName.trim(),
       funName: bottle.funName.trim() || null,
       price: parseFloat(bottle.price),

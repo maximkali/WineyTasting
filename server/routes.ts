@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gameId,
         labelName: bottle.labelName,
         funName: bottle.funName || null,
-        price: bottle.price,
+        price: Math.round(bottle.price * 100), // Convert to cents and store as integer
         roundIndex: null,
       }));
       
@@ -241,15 +241,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Rounds data must be an array' });
       }
       
-      // Update bottle assignments
+      // Get all existing bottles for this game
+      const existingBottles = await storage.getBottlesByGame(gameId);
+      const existingBottleIds = new Set(existingBottles.map(b => b.id));
+      
+      // Comprehensive validation
+      const allAssignedIds = new Set<string>();
+      const duplicates: string[] = [];
+      
       for (const roundData of roundsData) {
         const { roundIndex, bottleIds } = roundData;
+        
+        if (typeof roundIndex !== 'number' || roundIndex < 0) {
+          return res.status(400).json({ error: 'Invalid round index' });
+        }
         
         if (!Array.isArray(bottleIds)) {
           return res.status(400).json({ error: 'Bottle IDs must be an array' });
         }
         
-        // Update each bottle's round assignment
+        // Check for valid bottle IDs
+        for (const bottleId of bottleIds) {
+          if (!existingBottleIds.has(bottleId)) {
+            return res.status(400).json({ error: `Invalid bottle ID: ${bottleId}` });
+          }
+          
+          if (allAssignedIds.has(bottleId)) {
+            const bottle = existingBottles.find(b => b.id === bottleId);
+            duplicates.push(bottle?.labelName || bottleId);
+          }
+          allAssignedIds.add(bottleId);
+        }
+      }
+      
+      if (duplicates.length > 0) {
+        return res.status(400).json({ 
+          error: `Bottles assigned to multiple rounds: ${duplicates.join(", ")}` 
+        });
+      }
+      
+      // Validate total bottles assignment if game config exists
+      if (game.totalBottles && allAssignedIds.size > game.totalBottles) {
+        return res.status(400).json({ 
+          error: `Too many bottles assigned (${allAssignedIds.size}), maximum is ${game.totalBottles}` 
+        });
+      }
+      
+      // Validate bottles per round if config exists
+      if (game.bottlesPerRound) {
+        for (const roundData of roundsData) {
+          if (roundData.bottleIds.length > game.bottlesPerRound) {
+            return res.status(400).json({ 
+              error: `Round ${roundData.roundIndex} has too many bottles (${roundData.bottleIds.length}), maximum is ${game.bottlesPerRound}` 
+            });
+          }
+        }
+      }
+      
+      // First, clear all existing round assignments
+      for (const bottle of existingBottles) {
+        await storage.updateBottle(bottle.id, { roundIndex: null });
+      }
+      
+      // Then assign new round assignments
+      for (const roundData of roundsData) {
+        const { roundIndex, bottleIds } = roundData;
+        
         for (const bottleId of bottleIds) {
           await storage.updateBottle(bottleId, { roundIndex });
         }
@@ -257,6 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ success: true });
     } catch (error) {
+      console.error('Error organizing bottles:', error);
       res.status(500).json({ error: 'Failed to organize bottles' });
     }
   });
@@ -388,13 +446,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
+      // Comprehensive pre-start validation
+      const errors = [];
+      
+      // Check if game is in correct status
+      if (game.status !== 'setup') {
+        return res.status(400).json({ error: 'Game must be in setup status to start' });
+      }
+      
+      // Validate game configuration is complete
+      if (!game.totalBottles || !game.totalRounds || !game.bottlesPerRound) {
+        return res.status(400).json({ error: 'Game configuration is incomplete. Please complete setup first.' });
+      }
+      
+      // Check bottles exist and are properly configured
+      const bottles = await storage.getBottlesByGame(gameId);
+      if (bottles.length !== game.totalBottles) {
+        errors.push(`Expected ${game.totalBottles} bottles, found ${bottles.length}`);
+      }
+      
+      // Validate all bottles have required data
+      const invalidBottles = bottles.filter(b => 
+        !b.labelName?.trim() || 
+        typeof b.price !== 'number' || 
+        b.price <= 0
+      );
+      if (invalidBottles.length > 0) {
+        errors.push(`${invalidBottles.length} bottles have missing or invalid data`);
+      }
+      
+      // Check for duplicate prices
+      const prices = bottles.map(b => b.price).filter(p => typeof p === 'number' && p > 0);
+      const uniquePrices = new Set(prices);
+      if (uniquePrices.size !== prices.length) {
+        errors.push('All bottle prices must be unique');
+      }
+      
+      // Check bottle organization (if organization required)
+      const assignedBottles = bottles.filter(b => typeof b.roundIndex === 'number');
+      if (assignedBottles.length > 0) {
+        // If any bottles are assigned, all must be assigned
+        if (assignedBottles.length !== bottles.length) {
+          errors.push(`${bottles.length - assignedBottles.length} bottles are not assigned to rounds`);
+        }
+        
+        // Validate round distribution
+        const roundCounts = new Map<number, number>();
+        assignedBottles.forEach(b => {
+          const count = roundCounts.get(b.roundIndex!) || 0;
+          roundCounts.set(b.roundIndex!, count + 1);
+        });
+        
+        for (let i = 0; i < game.totalRounds!; i++) {
+          const count = roundCounts.get(i) || 0;
+          if (count !== game.bottlesPerRound) {
+            errors.push(`Round ${i + 1} has ${count} bottles, expected ${game.bottlesPerRound}`);
+          }
+        }
+      } else {
+        // Auto-assign bottles if none are assigned
+        const shuffledBottles = shuffleArray([...bottles], gameId);
+        for (let i = 0; i < shuffledBottles.length; i++) {
+          const roundIndex = Math.floor(i / game.bottlesPerRound!);
+          await storage.updateBottle(shuffledBottles[i].id, { roundIndex });
+        }
+      }
+      
+      if (errors.length > 0) {
+        return res.status(400).json({ 
+          error: 'Cannot start game: ' + errors.join('. ') 
+        });
+      }
+      
+      // All validations passed, start the game
       await storage.updateGame(gameId, { 
-        status: 'in_round',
-        currentRound: 1,
+        status: 'lobby',
+        currentRound: 0,
       });
       
       res.json({ success: true });
     } catch (error) {
+      console.error('Error starting game:', error);
       res.status(500).json({ error: 'Failed to start game' });
     }
   });
