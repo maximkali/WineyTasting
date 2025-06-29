@@ -417,6 +417,8 @@ export default function Setup() {
     bottles.forEach((bottle, index) => {
       if (!bottle.labelName.trim()) {
         errors.push(`Wine ${String.fromCharCode(65 + index)}: Label name is required`);
+      } else if (bottle.labelName.trim().length < 3) {
+        errors.push(`Wine ${String.fromCharCode(65 + index)}: Label name must be at least 3 characters`);
       }
       if (!bottle.price.trim() || isNaN(parseFloat(bottle.price)) || parseFloat(bottle.price) <= 0) {
         errors.push(`Wine ${String.fromCharCode(65 + index)}: Valid price is required`);
