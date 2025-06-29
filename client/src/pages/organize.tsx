@@ -164,6 +164,7 @@ interface RoundCardProps {
 function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, onRemoveWine }: RoundCardProps) {
   const canAddMore = wines.length < bottlesPerRound;
   const maxNewSelections = bottlesPerRound - wines.length;
+  const totalCost = wines.reduce((sum, wine) => sum + wine.price, 0);
 
   return (
     <Card className="h-fit">
@@ -176,6 +177,9 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
           >
             {wines.length}/{bottlesPerRound}
           </Badge>
+          <span className="text-sm font-normal text-gray-600">
+            Sum: ${totalCost.toFixed(2)}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -268,6 +272,63 @@ export default function Organize() {
   // Calculate unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
   const unassignedWines = wines.filter(w => !assignedWineIds.has(w.id));
+
+  // Auto assign functionality
+  const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
+
+  const handleAutoAssign = () => {
+    if (unassignedWines.length === 0) return;
+    
+    // Shuffle unassigned wines
+    const shuffled = [...unassignedWines].sort(() => Math.random() - 0.5);
+    const newRounds = [...rounds];
+    
+    // Distribute wines evenly across rounds
+    let wineIndex = 0;
+    for (let roundIndex = 0; roundIndex < newRounds.length; roundIndex++) {
+      const remainingSlots = (gameData?.game?.bottlesPerRound || 4) - newRounds[roundIndex].length;
+      for (let i = 0; i < remainingSlots && wineIndex < shuffled.length; i++) {
+        newRounds[roundIndex].push(shuffled[wineIndex]);
+        wineIndex++;
+      }
+    }
+    
+    setRounds(newRounds);
+  };
+
+  const handleUnassignAll = () => {
+    setRounds(Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []));
+    setHasAutoAssigned(false);
+  };
+
+  const handleMixEmUp = () => {
+    const allAssignedWines = rounds.flat();
+    if (allAssignedWines.length === 0) return;
+    
+    // Shuffle assigned wines
+    const shuffled = [...allAssignedWines].sort(() => Math.random() - 0.5);
+    const newRounds = Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []);
+    
+    // Redistribute shuffled wines
+    let wineIndex = 0;
+    for (let roundIndex = 0; roundIndex < newRounds.length; roundIndex++) {
+      const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
+      for (let i = 0; i < bottlesPerRound && wineIndex < shuffled.length; i++) {
+        newRounds[roundIndex].push(shuffled[wineIndex]);
+        wineIndex++;
+      }
+    }
+    
+    setRounds(newRounds);
+  };
+
+  // Auto assign on first load when all wines are unassigned
+  useEffect(() => {
+    if (wines.length > 0 && !hasAutoAssigned && unassignedWines.length === wines.length) {
+      handleAutoAssign();
+      setHasAutoAssigned(true);
+    }
+  }, [wines.length, hasAutoAssigned, unassignedWines.length]);
 
   // Mutation to save bottle assignments
   const updateBottlesMutation = useMutation({
@@ -370,7 +431,35 @@ export default function Organize() {
           </p>
         </div>
 
-        
+        {/* Control buttons */}
+        <div className="flex gap-3 mb-6 justify-center">
+          <Button
+            onClick={handleAutoAssign}
+            disabled={unassignedWines.length === 0}
+            variant="outline"
+            size="sm"
+          >
+            Auto Assign
+          </Button>
+          
+          <Button
+            onClick={handleUnassignAll}
+            disabled={rounds.flat().length === 0}
+            variant="outline"
+            size="sm"
+          >
+            Unassign All
+          </Button>
+          
+          <Button
+            onClick={handleMixEmUp}
+            disabled={rounds.flat().length === 0}
+            variant="outline"
+            size="sm"
+          >
+            Mix Em Up
+          </Button>
+        </div>
 
         {/* Rounds grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
