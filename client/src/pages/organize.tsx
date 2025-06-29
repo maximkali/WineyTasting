@@ -45,30 +45,37 @@ function SortableWine({ wine, index }: SortableWineProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-2 p-3 bg-white border rounded-lg touch-manipulation min-h-[100px] w-full shadow-sm hover:shadow-md transition-shadow ${
+      className={`bg-white border rounded-lg touch-manipulation w-full shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "shadow-lg opacity-50" : ""
       }`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col gap-2"
+        className="cursor-grab active:cursor-grabbing w-full h-full flex items-center gap-3 p-3"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {String.fromCharCode(65 + index)}
-          </div>
-          <div className="text-sm font-semibold text-green-700">${wine.price}</div>
-          <GripVertical className="h-4 w-4 text-gray-400 ml-auto" />
+        {/* Avatar on the left */}
+        <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+          {wine.labelName.charAt(0).toUpperCase()}
         </div>
-        <div className="text-sm font-medium text-gray-900 leading-tight">
-          {wine.labelName}
-        </div>
-        {wine.funName && (
-          <div className="text-xs text-gray-600 leading-tight">
-            {wine.funName}
+        
+        {/* Wine info in the center - takes up available space */}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 leading-tight truncate">
+            {wine.labelName}
           </div>
-        )}
+          {wine.funName && (
+            <div className="text-xs text-gray-600 mt-1 italic truncate">
+              "{wine.funName}"
+            </div>
+          )}
+        </div>
+        
+        {/* Price and drag handle on the right */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-lg font-bold text-wine">${wine.price}</span>
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
       </div>
     </div>
   );
@@ -106,12 +113,10 @@ function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
           items={wines.map(w => w.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="max-h-96 overflow-y-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {wines.map((wine, index) => (
-                <SortableWine key={wine.id} wine={wine} index={index} />
-              ))}
-            </div>
+          <div className="space-y-2">
+            {wines.map((wine, index) => (
+              <SortableWine key={wine.id} wine={wine} index={index} />
+            ))}
             {wines.length === 0 && (
               <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
                 All wines assigned to rounds
