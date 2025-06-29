@@ -6,7 +6,7 @@ export default function WineyHeader() {
           <div className="text-[42px]">🍷</div>
           <div>
             <h1 className="text-3xl font-bold text-wine">WINEY</h1>
-            <p className="text-sm text-gray-600 text-center">The ultimate wine tasting game competition</p>
+            <p className="text-sm text-gray-600 text-center">Who's got the best taste?</p>
           </div>
         </div>
       </div>
