@@ -39,27 +39,21 @@ function SortableWine({ wine, index }: SortableWineProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white border rounded-lg touch-manipulation ${
+      className={`flex flex-col items-center gap-1 p-2 bg-white border rounded-lg touch-manipulation w-16 h-20 ${
         isDragging ? "shadow-lg" : ""
       }`}
+      title={`${wine.labelName}${wine.funName ? ` (${wine.funName})` : ''} - $${wine.price}`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing flex-shrink-0 p-1 md:p-0"
+        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col items-center justify-center"
       >
-        <GripVertical className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+        <div className="w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold mb-1">
+          {String.fromCharCode(65 + index)}
+        </div>
+        <div className="text-xs font-medium text-center leading-tight truncate w-full">${wine.price}</div>
       </div>
-      <div className="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs md:text-sm font-bold">
-        {String.fromCharCode(65 + index)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm md:text-base truncate">{wine.labelName}</div>
-        {wine.funName && (
-          <div className="text-xs md:text-sm text-gray-500 truncate">{wine.funName}</div>
-        )}
-      </div>
-      <div className="text-xs md:text-sm font-medium flex-shrink-0">${wine.price}</div>
     </div>
   );
 }
@@ -83,10 +77,12 @@ function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 min-h-[150px] md:min-h-[200px]">
-          {wines.map((wine, index) => (
-            <SortableWine key={wine.id} wine={wine} index={index} />
-          ))}
+        <div className="min-h-[150px] md:min-h-[200px]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {wines.map((wine, index) => (
+              <SortableWine key={wine.id} wine={wine} index={index} />
+            ))}
+          </div>
           {wines.length === 0 && (
             <div className="text-center text-gray-400 py-6 md:py-8 text-sm">
               Drag wines here
@@ -292,10 +288,12 @@ export default function Organize() {
                   items={unassignedWines.map(w => w.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
-                    {unassignedWines.map((wine, index) => (
-                      <SortableWine key={wine.id} wine={wine} index={index} />
-                    ))}
+                  <div className="max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
+                    <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                      {unassignedWines.map((wine, index) => (
+                        <SortableWine key={wine.id} wine={wine} index={index} />
+                      ))}
+                    </div>
                     {unassignedWines.length === 0 && (
                       <div className="text-center text-gray-400 py-4">
                         All wines assigned
