@@ -174,8 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalBottles: config.totalBottles,
         totalRounds: config.totalRounds,
         bottlesPerRound: config.bottlesPerRound,
-        bottleEqPerPerson: Math.round(config.bottleEqPerPerson * 100), // Store as integer
-        ozPerPersonPerBottle: Math.round(config.ozPerPersonPerBottle * 100), // Store as integer
+        bottleEqPerPerson: config.bottleEqPerPerson, // Store as decimal
+        ozPerPersonPerBottle: config.ozPerPersonPerBottle, // Store as decimal
       });
       
       res.json({ game: updatedGame });
