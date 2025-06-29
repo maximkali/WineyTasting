@@ -542,6 +542,13 @@ export default function Setup() {
   // Wine entry step
   const currentBottleCount = bottles.length;
   const canRandomize = selectedConfig && currentBottleCount === selectedConfig.bottles;
+  
+  console.log('[DEBUG] canRandomize check:', {
+    selectedConfig: !!selectedConfig,
+    currentBottleCount,
+    requiredBottles: selectedConfig?.bottles,
+    canRandomize
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
