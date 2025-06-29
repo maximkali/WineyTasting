@@ -241,9 +241,21 @@ export default function Rounds() {
       }));
       setWines(wineData);
       
-      // Initialize empty rounds
+      // Initialize rounds - check if bottles already have round assignments
       const totalRounds = gameData.game.totalRounds || 5;
-      setRounds(Array(totalRounds).fill(null).map(() => []));
+      const initialRounds = Array(totalRounds).fill(null).map(() => []);
+      
+      // Populate rounds with existing assignments
+      bottlesData.bottles.forEach((bottle: any) => {
+        if (bottle.roundIndex !== null && bottle.roundIndex >= 0 && bottle.roundIndex < totalRounds) {
+          const wine = wineData.find(w => w.id === bottle.id);
+          if (wine) {
+            initialRounds[bottle.roundIndex].push(wine);
+          }
+        }
+      });
+      
+      setRounds(initialRounds);
     }
   }, [bottlesData, gameData]);
 
