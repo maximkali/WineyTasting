@@ -21,7 +21,7 @@ export default function Home() {
     onSuccess: (data) => {
       sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
       sessionStorage.setItem(`playerId_${data.game.id}`, data.playerId);
-      setLocation(`/game/${data.game.id}/setup`);
+      setLocation(`/setup/${data.game.id}`);
     },
     onError: () => {
       toast({
