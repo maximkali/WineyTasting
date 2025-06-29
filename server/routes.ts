@@ -224,6 +224,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Organize bottles into rounds manually
+  app.post("/api/games/:gameId/bottles/organize", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const { rounds: roundsData } = req.body;
+      const hostToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      const game = await storage.getGame(gameId);
+      if (!game || game.hostToken !== hostToken) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      // Validate rounds data
+      if (!Array.isArray(roundsData)) {
+        return res.status(400).json({ error: 'Rounds data must be an array' });
+      }
+      
+      // Update bottle assignments
+      for (const roundData of roundsData) {
+        const { roundIndex, bottleIds } = roundData;
+        
+        if (!Array.isArray(bottleIds)) {
+          return res.status(400).json({ error: 'Bottle IDs must be an array' });
+        }
+        
+        // Update each bottle's round assignment
+        for (const bottleId of bottleIds) {
+          await storage.updateBottle(bottleId, { roundIndex });
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to organize bottles' });
+    }
+  });
+
   // Create manual rounds organization
   app.post("/api/games/:gameId/rounds", async (req, res) => {
     try {

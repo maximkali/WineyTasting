@@ -170,7 +170,10 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           Round {round + 1}
-          <Badge variant="secondary" className="text-xs">
+          <Badge 
+            variant={wines.length === bottlesPerRound ? "destructive" : "secondary"} 
+            className="text-xs"
+          >
             {wines.length}/{bottlesPerRound}
           </Badge>
         </CardTitle>
@@ -367,22 +370,7 @@ export default function Organize() {
           </p>
         </div>
 
-        {/* Progress indicator */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm font-medium">Progress</p>
-                <p className="text-xs text-gray-600">
-                  {totalAssigned} of {wines.length} wines assigned
-                </p>
-              </div>
-              <Badge variant={allBottlesAssigned ? "default" : "secondary"}>
-                {allBottlesAssigned ? "Complete" : "In Progress"}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+        
 
         {/* Rounds grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
