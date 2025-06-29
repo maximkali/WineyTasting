@@ -98,7 +98,7 @@ function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
   return (
     <Card 
       ref={setNodeRef}
-      className={`transition-colors ${isOver ? 'border-green-500 bg-green-50' : ''}`}
+      className={`transition-colors ${isOver ? 'border-green-500 bg-green-50' : ''} min-h-[300px]`}
       style={style}
     >
       <CardHeader className="pb-3">
@@ -109,21 +109,21 @@ function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <SortableContext 
           items={wines.map(w => w.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[200px]">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
+            {wines.length === 0 && (
+              <div className="col-span-full text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                All wines assigned to rounds
+              </div>
+            )}
           </div>
-          {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-              All wines assigned to rounds
-            </div>
-          )}
         </SortableContext>
       </CardContent>
     </Card>
@@ -148,7 +148,7 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
   return (
     <Card 
       ref={setNodeRef}
-      className={`min-h-[250px] transition-colors ${isOver ? 'border-blue-500 bg-blue-50' : ''}`}
+      className={`min-h-[350px] transition-colors ${isOver ? 'border-blue-500 bg-blue-50' : ''} flex flex-col`}
       style={style}
     >
       <CardHeader className="pb-3">
@@ -159,9 +159,9 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="min-h-[200px] space-y-2">
-          {/* Grid for displaying wines - up to 2 columns */}
+      <CardContent className="flex-1 flex flex-col">
+        <div className="flex-1 space-y-2">
+          {/* Wine tiles */}
           <SortableContext 
             items={wines.map(w => w.id)}
             strategy={rectSortingStrategy}
@@ -187,7 +187,8 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
             </div>
           )}
           
-
+          {/* Fill remaining space to make entire card droppable */}
+          <div className="flex-1 min-h-[50px]"></div>
         </div>
       </CardContent>
     </Card>
@@ -261,8 +262,6 @@ export default function Organize() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
-    console.log("Drag ended:", { activeId: active.id, overId: over?.id });
     
     if (!over || active.id === over.id) return;
 
