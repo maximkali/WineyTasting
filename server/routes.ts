@@ -168,6 +168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedGame = await storage.updateGame(gameId, {
+        hostName: config.hostName,
+        hostEmail: config.hostEmail,
         maxPlayers: config.maxPlayers,
         totalBottles: config.totalBottles,
         totalRounds: config.totalRounds,

@@ -51,6 +51,10 @@ export default function Setup() {
     },
   });
   
+  // Host information state
+  const [hostName, setHostName] = useState<string>("");
+  const [hostEmail, setHostEmail] = useState<string>("");
+  
   // Game configuration state
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
   const [selectedBottles, setSelectedBottles] = useState<number | null>(null);
@@ -95,6 +99,10 @@ export default function Setup() {
     
     if (gameData?.game && bottlesData?.bottles) {
       const game = gameData.game;
+      
+      // Load host information
+      if (game.hostName) setHostName(game.hostName);
+      if (game.hostEmail) setHostEmail(game.hostEmail);
       
       // Set configuration from game data
       if (game.totalBottles && game.maxPlayers && game.totalRounds && game.bottlesPerRound) {
@@ -141,12 +149,14 @@ export default function Setup() {
         bottlesPerRound: config.bottlesPerRound,
         bottleEqPerPerson: config.bottleEqPerPerson,
         ozPerPersonPerBottle: config.ozPerPersonPerBottle,
+        hostName: hostName,
+        hostEmail: hostEmail,
       };
       
       if (isNewGame) {
         // First create the game
         const gameRes = await apiRequest("POST", "/api/games", {
-          displayName: "Host",
+          displayName: hostName || "Host",
         });
         const gameData = await gameRes.json();
         
@@ -334,6 +344,38 @@ export default function Setup() {
       });
       return;
     }
+
+    // Validate required fields for new games
+    if (isNewGame) {
+      if (!hostName.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter your name.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!hostEmail.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter your email.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(hostEmail)) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid email address.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     // Check if we need to save or just move forward
     const existingGame = gameData?.game;
@@ -416,6 +458,34 @@ export default function Setup() {
 
         <Card>
           <CardContent className="pt-6 space-y-6">
+            {/* Host Name Input */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium uppercase text-muted-foreground">
+                Your Name:
+              </Label>
+              <Input
+                type="text"
+                placeholder="First Last"
+                value={hostName}
+                onChange={(e) => setHostName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Host Email Input */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium uppercase text-muted-foreground">
+                Your Email:
+              </Label>
+              <Input
+                type="email"
+                placeholder="example@email.com"
+                value={hostEmail}
+                onChange={(e) => setHostEmail(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
             {/* Players Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm font-medium uppercase text-muted-foreground">

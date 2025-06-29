@@ -9,6 +9,9 @@ export const games = pgTable("games", {
   hostToken: text("host_token").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Host information
+  hostName: text("host_name"),
+  hostEmail: text("host_email"),
   // Game setup configuration
   maxPlayers: integer("max_players"),
   totalBottles: integer("total_bottles"),
@@ -124,6 +127,8 @@ export const joinGameSchema = z.object({
 });
 
 export const setGameConfigSchema = z.object({
+  hostName: z.string().min(1).max(50).optional(),
+  hostEmail: z.string().email().optional(),
   maxPlayers: z.number().min(10).max(22),
   totalBottles: z.number().min(9).max(20),
   totalRounds: z.number().min(3).max(5),
