@@ -19,6 +19,7 @@ interface Wine {
   labelName: string;
   funName: string | null;
   price: number;
+  originalIndex?: number;
 }
 
 interface SortableWineProps {
@@ -56,7 +57,7 @@ function SortableWine({ wine, index }: SortableWineProps) {
       >
         {/* Avatar on the left */}
         <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-          {String.fromCharCode(65 + index)}
+          {String.fromCharCode(65 + (wine.originalIndex ?? index))}
         </div>
         
         {/* Wine info in the center - takes up available space */}
@@ -230,8 +231,12 @@ export default function Organize() {
       const emptyRounds = Array(totalRounds).fill(null).map(() => []);
       setRounds(emptyRounds);
       
-      // Set all bottles as unassigned initially
-      setUnassignedWines([...gameData.bottles]);
+      // Set all bottles as unassigned initially, with original index
+      const winesWithIndex = gameData.bottles.map((bottle: any, index: number) => ({
+        ...bottle,
+        originalIndex: index
+      }));
+      setUnassignedWines(winesWithIndex);
     } else {
       console.log("No bottles found in game data", gameData);
     }
