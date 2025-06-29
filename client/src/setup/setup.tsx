@@ -211,8 +211,8 @@ export default function Setup() {
         title: "Success",
         description: "Wines saved successfully!",
       });
-      // Navigate to wine list where wines can be edited
-      setLocation(`/wine-list/${gameId}`);
+      // Navigate directly to rounds to organize wines
+      setLocation(`/rounds/${gameId}`);
     },
     onError: (error) => {
       toast({

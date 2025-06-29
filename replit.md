@@ -58,8 +58,9 @@ The application follows a strict state machine pattern with these game states:
 ### Game Creation Flow
 1. Host provides display name
 2. Backend generates unique game ID, join code, and host token
-3. Host redirected to setup page to configure 20 bottles
-4. Bottles are shuffled and distributed across 5 rounds (4 bottles each)
+3. Host redirected to setup page to select game configuration and enter all wines
+4. Wines are saved to database and host proceeds to rounds page
+5. Host organizes wines into rounds using the visual interface
 
 ### Player Join Flow
 1. Players access join link with game ID
@@ -124,6 +125,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- June 29, 2025 (PM). Fixed "No wines found" error by implementing database-first approach. Removed erroneously added Wine List page that wasn't part of original design. Corrected flow is now: Setup (enter wines) → Rounds (organize wines). All data persists in database throughout the flow, eliminating session storage issues. Updated navigation to go directly from Setup to Rounds as originally intended.
 - June 29, 2025 (PM). Reorganized folder structure to align with user flow: Home → Setup → Wine Rounds → Gameplay. Consolidated wine-list and rounds into single "wine-rounds" folder. Created feature-based folder organization: home/ (entry points), setup/ (game configuration), wine-rounds/ (wine entry and organization), gameplay/ (active game components), common/ (shared resources). Updated all imports to use new common/ path structure. This provides clear separation of concerns with each folder having a specific purpose in the user journey.
 - June 29, 2025 (PM). Completed comprehensive code cleanup and file organization. Removed all old unused files (storage-old.ts, organize-old.tsx, setup-old.tsx), removed 18+ unused Shadcn UI components, cleaned up clunky sessionStorage and localStorage logic from setup and organize pages. Renamed organize.tsx to rounds.tsx to match intended page flow (Home > Setup > Wine List > Rounds). Updated App.tsx routing and function names accordingly. This significantly simplified memory management and improved code organization.
 - June 29, 2025 (PM). Removed all backward navigation throughout the entire application to prevent session memory issues and data loss. Eliminated "Back to Home", "Back to Setup", and "Back to Wine List" buttons from lobby, setup, and organize pages. Removed resetConfiguration function and ArrowLeft imports. Navigation is now strictly forward-only: Home → Setup → Wine List → Rounds. This ensures clean session state and prevents users from accidentally losing progress by going backwards.
