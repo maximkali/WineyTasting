@@ -25,10 +25,10 @@ export default function Home() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
             <Button
               onClick={() => setLocation('/setup')}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105"
+              className="bg-red-600 hover:bg-red-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
             >
               Host a Tasting
             </Button>
@@ -41,28 +41,33 @@ export default function Home() {
                   setLocation(`/join/${gameCode.toUpperCase()}`);
                 }
               }}
-              className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-8 py-4 text-lg font-semibold rounded-lg transition-all"
+              className="border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-12 py-4 text-lg font-semibold rounded-lg transition-all min-w-[180px]"
             >
               Join Game
             </Button>
           </div>
 
           {/* Feature highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
             <div className="text-center space-y-3">
               <div className="text-3xl">🍷</div>
               <h3 className="font-semibold text-gray-900">Blind Tasting</h3>
-              <p className="text-gray-600 text-sm">Test your wine knowledge without seeing labels</p>
+              <p className="text-gray-600 text-sm">Try 3 to 4 mystery wines each round – no labels, just taste and instinct.</p>
             </div>
             <div className="text-center space-y-3">
               <div className="text-3xl">📊</div>
+              <h3 className="font-semibold text-gray-900">Live Ranking</h3>
+              <p className="text-gray-600 text-sm">Think you can price them right? Stack each wine from luxe to low-end.</p>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="text-3xl">✅</div>
               <h3 className="font-semibold text-gray-900">Smart Scoring</h3>
-              <p className="text-gray-600 text-sm">Advanced ranking system rewards accuracy</p>
+              <p className="text-gray-600 text-sm">Once everyone votes, see how your picks stacked up against your friends.</p>
             </div>
             <div className="text-center space-y-3">
               <div className="text-3xl">🏆</div>
               <h3 className="font-semibold text-gray-900">Compete & Win</h3>
-              <p className="text-gray-600 text-sm">Challenge friends and discover the wine expert</p>
+              <p className="text-gray-600 text-sm">Top taster takes the crown. Bragging rights (and maybe a hangover) await.</p>
             </div>
           </div>
         </div>
