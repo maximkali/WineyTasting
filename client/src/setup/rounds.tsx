@@ -407,6 +407,22 @@ export default function Rounds() {
   if (gameLoading || bottlesLoading) return <div>Loading...</div>;
   if (gameError) return <div>Error loading game data</div>;
   if (!gameData) return <div>Game not found</div>;
+  
+  // Handle missing authentication - redirect to setup page
+  if (!finalHostToken && gameData?.game) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <WineyHeader />
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Required</h1>
+          <p className="text-gray-600 mb-6">You need to be the game host to organize wines into rounds.</p>
+          <Button onClick={() => navigate(`/setup/${gameId}`)}>
+            Go to Setup Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (!bottlesData || bottlesData.bottles.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
