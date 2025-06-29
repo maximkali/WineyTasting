@@ -121,7 +121,28 @@ export default function Setup() {
 
   // Single effect to handle both loading data and query param navigation
   useEffect(() => {
-
+    // Check for clear parameter first
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldClear = urlParams.get('clear') === 'true';
+    
+    if (shouldClear) {
+      // Clear bottles data but preserve configuration
+      setBottles([]);
+      setConfigurationStep('config');
+      // Remove the clear parameter from URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('clear');
+      window.history.replaceState({}, '', newUrl.toString());
+      // Delete bottles from database
+      if (gameId && hostToken) {
+        apiRequest("DELETE", `/api/games/${gameId}/bottles`, undefined, {
+          headers: { Authorization: `Bearer ${hostToken}` }
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
+        });
+      }
+      return;
+    }
     
     if (gameData?.game && bottlesData?.bottles) {
       const game = gameData.game;
@@ -154,7 +175,6 @@ export default function Setup() {
         }
         
         // Check query param to determine which step to show
-        const urlParams = new URLSearchParams(window.location.search);
         const stepParam = urlParams.get('step');
         
         if (stepParam === 'wines' || bottlesData.bottles.length > 0) {
@@ -163,7 +183,7 @@ export default function Setup() {
         }
       }
     }
-  }, [gameData, bottlesData, location]);
+  }, [gameData, bottlesData, location, gameId, hostToken, queryClient]);
 
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
