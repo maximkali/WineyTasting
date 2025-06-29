@@ -56,7 +56,7 @@ function SortableWine({ wine, index }: SortableWineProps) {
       >
         {/* Avatar on the left */}
         <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-          {wine.labelName.charAt(0).toUpperCase()}
+          {String.fromCharCode(65 + index)}
         </div>
         
         {/* Wine info in the center - takes up available space */}
