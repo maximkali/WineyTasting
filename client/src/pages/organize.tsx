@@ -136,7 +136,16 @@ export default function Organize() {
   );
 
   // Fetch game data
-  const { data: gameData, isLoading, error } = useGame(gameId!);
+  const { data: gameData, isLoading, error } = useGame(gameId!) as {
+    data: {
+      game: any;
+      bottles: Wine[];
+      players: any[];
+      rounds: any[];
+    } | undefined;
+    isLoading: boolean;
+    error: any;
+  };
 
   const [rounds, setRounds] = useState<Wine[][]>([]);
   const [unassignedWines, setUnassignedWines] = useState<Wine[]>([]);
@@ -145,19 +154,19 @@ export default function Organize() {
   useEffect(() => {
     console.log("Full game data:", gameData);
     
-    if (gameData?.game?.bottles && Array.isArray(gameData.game.bottles)) {
+    if (gameData?.bottles && Array.isArray(gameData.bottles)) {
       const totalRounds = gameData.game.totalRounds || 5;
       
-      console.log("Setting up", totalRounds, "rounds with", gameData.game.bottles.length, "bottles");
+      console.log("Setting up", totalRounds, "rounds with", gameData.bottles.length, "bottles");
       
       // Initialize empty rounds
       const emptyRounds = Array(totalRounds).fill(null).map(() => []);
       setRounds(emptyRounds);
       
       // Set all bottles as unassigned initially
-      setUnassignedWines([...gameData.game.bottles]);
+      setUnassignedWines([...gameData.bottles]);
     } else {
-      console.log("No bottles found in game data");
+      console.log("No bottles found in game data", gameData);
     }
   }, [gameData]);
 
