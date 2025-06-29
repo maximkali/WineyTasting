@@ -68,7 +68,7 @@ export default function WineList() {
         gameId: gameId!
       }));
 
-      return apiRequest('PUT', `/api/games/${gameId}/bottles`, { bottles }, {
+      return apiRequest('POST', `/api/games/${gameId}/bottles`, { bottles }, {
         'Authorization': `Bearer ${hostToken}`
       });
     },

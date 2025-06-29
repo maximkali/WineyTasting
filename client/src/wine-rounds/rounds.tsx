@@ -519,19 +519,7 @@ export default function Rounds() {
       <WineyHeader />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                navigate(`/wine-list/${gameId}`);
-              }}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Wine List
-            </Button>
-          </div>
+
           <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
             Rounds
           </h1>
