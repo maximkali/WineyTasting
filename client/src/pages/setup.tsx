@@ -108,8 +108,9 @@ export default function Setup() {
       queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
       toast({
         title: "Success",
-        description: "Wines added successfully!",
+        description: "Wines locked! Now organize them into rounds.",
       });
+      setLocation(`/organize/${gameId}`);
     },
     onError: (error) => {
       toast({

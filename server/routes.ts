@@ -224,6 +224,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create manual rounds organization
+  app.post("/api/games/:gameId/rounds", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const { rounds: roundsData } = req.body;
+      const hostToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      const game = await storage.getGame(gameId);
+      if (!game || game.hostToken !== hostToken) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const bottles = await storage.getBottlesByGame(gameId);
+      const totalBottles = game.totalBottles || bottles.length;
+      const totalRounds = game.totalRounds || 4;
+      const bottlesPerRound = game.bottlesPerRound || 4;
+      
+      // Validate rounds data
+      if (!Array.isArray(roundsData) || roundsData.length !== totalRounds) {
+        return res.status(400).json({ error: `Must have exactly ${totalRounds} rounds` });
+      }
+      
+      const allBottleIds = new Set();
+      for (const roundData of roundsData) {
+        if (!Array.isArray(roundData.bottles) || roundData.bottles.length !== bottlesPerRound) {
+          return res.status(400).json({ error: `Each round must have exactly ${bottlesPerRound} bottles` });
+        }
+        
+        for (const bottleId of roundData.bottles) {
+          if (allBottleIds.has(bottleId)) {
+            return res.status(400).json({ error: 'Bottle appears in multiple rounds' });
+          }
+          allBottleIds.add(bottleId);
+        }
+      }
+      
+      if (allBottleIds.size !== totalBottles) {
+        return res.status(400).json({ error: `Must assign all ${totalBottles} bottles` });
+      }
+      
+      // Update bottles with round assignments and create rounds
+      const rounds = [];
+      for (const roundData of roundsData) {
+        const roundIndex = roundData.index;
+        const bottleIds = roundData.bottles;
+        
+        // Update each bottle with its round assignment
+        for (const bottleId of bottleIds) {
+          await storage.updateBottle(bottleId, { roundIndex });
+        }
+        
+        rounds.push({
+          id: generateId(),
+          gameId,
+          index: roundIndex,
+          bottleIds,
+          revealed: false,
+        });
+      }
+      
+      await storage.createRounds(rounds);
+      await storage.updateGame(gameId, { status: 'lobby' });
+      
+      res.json({ rounds });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create rounds' });
+    }
+  });
+
   // Randomize bottles into rounds
   app.post("/api/games/:gameId/randomize", async (req, res) => {
     try {
