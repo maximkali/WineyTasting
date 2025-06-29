@@ -182,11 +182,7 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
             </div>
           )}
           
-          {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8 text-sm">
-              Drop {bottlesPerRound} wines here
-            </div>
-          )}
+
         </div>
       </CardContent>
     </Card>
