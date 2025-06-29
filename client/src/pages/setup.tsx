@@ -265,7 +265,14 @@ export default function Setup() {
         <div className="container max-w-2xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Let's set up your tasting adventure!</h1>
-          <p className="text-muted-foreground">Complete the basic settings below to get started. Then, add each wine's details – we'll need the label name, a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.</p>
+          {selectedConfig && (
+            <p className="text-muted-foreground">
+              In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {selectedConfig.ozPerPersonPerBottle} oz. That adds up to {(selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle / 25.36) * 100)}% of a standard 750ml bottle). After each tasting, competitors should jot down notes on aroma, flavor, and finish, then stack rank the four wines from that round. One point is awarded for each wine correctly placed in the price order that round. The player with the highest total score at the end wins.
+            </p>
+          )}
+          {!selectedConfig && (
+            <p className="text-muted-foreground">Complete the basic settings below to get started. Then, add each wine's details – we'll need the label name, a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.</p>
+          )}
         </div>
 
         <Card>
