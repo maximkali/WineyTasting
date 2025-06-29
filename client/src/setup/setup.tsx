@@ -631,7 +631,7 @@ export default function Setup() {
               <Badge variant="secondary">{selectedConfig.players} players</Badge>
               <Badge variant="secondary">{selectedConfig.bottles} bottles</Badge>
               <Badge variant="secondary">{selectedConfig.rounds} rounds</Badge>
-              <Badge variant="secondary">{(selectedConfig.ozPerPersonPerBottle / 100).toFixed(1)} oz pours</Badge>
+              <Badge variant="secondary">{selectedConfig.ozPerPersonPerBottle ? (selectedConfig.ozPerPersonPerBottle / 100).toFixed(2) : '0.00'} oz pours</Badge>
             </div>
           )}
         </CardHeader>
