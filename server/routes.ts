@@ -237,17 +237,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get bottles for a game
+  // Get bottles for a game (no auth required for viewing)
   app.get("/api/games/:gameId/bottles", async (req, res) => {
     try {
       const { gameId } = req.params;
-      const hostToken = req.headers.authorization?.replace('Bearer ', '');
       
       const game = await storage.getGame(gameId);
-      console.log('[DEBUG] GET bottles - gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...', 'game.hostToken:', game?.hostToken?.substring(0, 10) + '...');
-      
-      if (!game || game.hostToken !== hostToken) {
-        return res.status(403).json({ error: 'Unauthorized' });
+      if (!game) {
+        return res.status(404).json({ error: 'Game not found' });
       }
       
       const bottles = await storage.getBottlesByGame(gameId);
@@ -312,17 +309,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Organize bottles into rounds manually
+  // Organize bottles into rounds manually (no auth required)
   app.post("/api/games/:gameId/bottles/organize", async (req, res) => {
     try {
       const { gameId } = req.params;
       const { rounds: roundsData } = req.body;
-      const hostToken = req.headers.authorization?.replace('Bearer ', '');
       
       const game = await storage.getGame(gameId);
-      console.log(`[DEBUG] Organize auth - gameId: ${gameId} hostToken: ${hostToken?.substring(0, 10)}... game.hostToken: ${game?.hostToken?.substring(0, 10)}...`);
-      if (!game || game.hostToken !== hostToken) {
-        return res.status(403).json({ error: 'Unauthorized' });
+      if (!game) {
+        return res.status(404).json({ error: 'Game not found' });
       }
       
       // Validate rounds data

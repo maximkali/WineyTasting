@@ -215,10 +215,10 @@ export default function Rounds() {
     finalToken: finalHostToken?.substring(0, 10) + '...'
   });
   
-  // Bottles data - read directly from database
+  // Bottles data - read directly from database (no auth required for viewing)
   const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
     queryKey: [`/api/games/${gameId}/bottles`],
-    enabled: !!gameId && !!finalHostToken,
+    enabled: !!gameId,
   });
   
   // State for wines and rounds
@@ -251,7 +251,7 @@ export default function Rounds() {
   // Save rounds mutation - wines are already in database
   const saveRoundsMutation = useMutation({
     mutationFn: async () => {
-      if (!gameId || !hostToken) throw new Error('Missing game ID or host token');
+      if (!gameId) throw new Error('Missing game ID');
       
       // Map round assignments using existing bottle IDs
       const roundData = rounds.map((roundWines, roundIndex) => ({
@@ -260,14 +260,9 @@ export default function Rounds() {
       }));
       
       console.log('[DEBUG] Saving rounds data:', roundData);
-      console.log('[DEBUG] Using hostToken:', finalHostToken?.substring(0, 10) + '...');
       
-      // Organize rounds with bottle IDs
-      const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData }, {
-        headers: {
-          'Authorization': `Bearer ${finalHostToken}`
-        }
-      });
+      // Organize rounds with bottle IDs (no auth required)
+      const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData });
       
       if (!organizeResponse.ok) {
         throw new Error('Failed to organize rounds');
@@ -407,22 +402,6 @@ export default function Rounds() {
   if (gameLoading || bottlesLoading) return <div>Loading...</div>;
   if (gameError) return <div>Error loading game data</div>;
   if (!gameData) return <div>Game not found</div>;
-  
-  // Handle missing authentication - redirect to setup page
-  if (!finalHostToken && gameData?.game) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <WineyHeader />
-        <div className="container mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Required</h1>
-          <p className="text-gray-600 mb-6">You need to be the game host to organize wines into rounds.</p>
-          <Button onClick={() => navigate(`/setup/${gameId}`)}>
-            Go to Setup Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
   if (!bottlesData || bottlesData.bottles.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
