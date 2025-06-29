@@ -28,9 +28,7 @@ export default function Home() {
             <Button
               onClick={() => setLocation('/setup')}
               className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
-            >
-              Host a Tasting
-            </Button>
+            >Host Tasting</Button>
             
             <Button
               variant="outline"
