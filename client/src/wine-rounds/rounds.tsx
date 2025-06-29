@@ -4,12 +4,11 @@ import { Button } from "@/common/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Badge } from "@/common/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/common/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/common/ui/alert-dialog";
 import { Checkbox } from "@/common/ui/checkbox";
 import { ScrollArea } from "@/common/ui/scroll-area";
-import { Plus, X, ArrowLeft } from "lucide-react";
+import { Plus, X, Shuffle, RotateCcw, Save } from "lucide-react";
 import WineyHeader from "@/common/winey-header";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/common/lib/queryClient";
 import { useToast } from "@/common/hooks/use-toast";
 import { useGame } from "@/common/hooks/use-game";
@@ -32,12 +31,10 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
   return (
     <div className="bg-white border rounded-lg w-full shadow-sm hover:shadow-md transition-shadow">
       <div className="w-full h-full flex items-center gap-3 p-3">
-        {/* Avatar on the left */}
         <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
           {String.fromCharCode(65 + (wine.originalIndex ?? index))}
         </div>
         
-        {/* Wine info in the center - takes up available space */}
         <div className="flex-1 min-w-0">
           <div className="font-medium text-xs text-gray-900 leading-tight truncate">
             {wine.labelName}
@@ -49,9 +46,8 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
           )}
         </div>
         
-        {/* Price and remove button on the right */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-sm font-bold text-wine">${wine.price}</span>
+          <span className="text-sm font-bold text-wine">${wine.price.toFixed(2)}</span>
           {onRemove && (
             <Button
               variant="ghost"
@@ -173,18 +169,17 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
         <CardTitle className="text-lg flex items-center gap-2">
           Round {round + 1}
           <Badge 
-            variant={wines.length === bottlesPerRound ? "destructive" : "secondary"} 
+            variant={wines.length === bottlesPerRound ? "default" : "secondary"} 
             className="text-xs"
           >
             {wines.length}/{bottlesPerRound}
           </Badge>
           <span className="text-sm font-normal text-gray-600">
-            Sum: ${Math.round(totalCost)}
+            Sum: ${totalCost.toFixed(2)}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Wine tiles */}
         {wines.map((wine, index) => (
           <WineTile
             key={wine.id}
@@ -194,7 +189,6 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
           />
         ))}
         
-        {/* Add wine button */}
         {canAddMore && availableWines.length > 0 && (
           <WineSelectionModal
             availableWines={availableWines}
@@ -204,14 +198,12 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
           />
         )}
         
-        {/* Full round message */}
         {!canAddMore && (
           <div className="text-center text-sm text-gray-500 py-4">
             Round is full
           </div>
         )}
         
-        {/* No available wines message */}
         {canAddMore && availableWines.length === 0 && (
           <div className="text-center text-sm text-gray-500 py-4">
             No wines available
@@ -228,94 +220,121 @@ export default function Rounds() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Simple host token retrieval
+  // Get host token and temporary wines from session storage
   const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
-  console.log('[DEBUG] Organize page - gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...');
-
-  // Game data using the hook
+  const tempWinesJson = gameId ? sessionStorage.getItem(`game-${gameId}-tempWines`) : null;
+  
+  // Game data
   const { data: gameData, isLoading, isError } = useGame(gameId!);
-
-  // Fetch bottles data separately
-  const { data: bottlesData, isLoading: bottlesLoading, error: bottlesError } = useQuery({
-    queryKey: [`/api/games/${gameId}/bottles`],
-    enabled: !!gameId && !!hostToken,
-    queryFn: async () => {
-      console.log('[DEBUG] Fetching bottles with gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...');
-      try {
-        const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
-          headers: { Authorization: `Bearer ${hostToken}` },
-        });
-        const data = await response.json();
-        console.log('[DEBUG] Bottles response:', data);
-        return data;
-      } catch (error) {
-        console.error('[DEBUG] Error fetching bottles:', error);
-        throw error;
-      }
-    },
-  });
   
-  // Log query state
-  console.log('[DEBUG] Bottles query state - loading:', bottlesLoading, 'error:', bottlesError, 'data:', bottlesData);
-  
-  // Invalidate bottles cache on mount to force fresh fetch
-  useEffect(() => {
-    console.log('[DEBUG] Invalidating bottles cache for gameId:', gameId);
-    queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
-  }, [gameId, queryClient]);
-  
+  // Parse temporary wines
   const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Update wines state when bottles data changes - but only if we don't have unsaved changes
+  const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
+  
+  // Load wines from session storage on mount
   useEffect(() => {
-    if (bottlesData?.bottles && gameData?.game && !hasUnsavedChanges) {
-      console.log("Setting up", gameData.game.totalRounds, "rounds with", bottlesData.bottles.length, "bottles");
-      
-      const wineData: Wine[] = bottlesData.bottles.map((bottle: any, index: number) => ({
-        id: bottle.id,
-        labelName: bottle.labelName,
-        funName: bottle.funName,
-        price: bottle.price / 100, // Convert cents back to dollars for display
-        originalIndex: index
-      }));
-      
-      setWines(wineData);
-      
-      // Initialize rounds based on existing assignments
-      const newRounds: Wine[][] = Array(gameData.game.totalRounds).fill(null).map(() => []);
-      
-      // Organize wines into rounds based on their roundIndex
-      wineData.forEach(wine => {
-        const bottle = bottlesData.bottles.find((b: any) => b.id === wine.id);
-        if (bottle && bottle.roundIndex !== null && bottle.roundIndex >= 0) {
-          if (newRounds[bottle.roundIndex]) {
-            newRounds[bottle.roundIndex].push(wine);
-          }
-        }
-      });
-      
-      setRounds(newRounds);
+    if (tempWinesJson && gameData?.game) {
+      try {
+        const parsedWines = JSON.parse(tempWinesJson);
+        setWines(parsedWines);
+        
+        // Initialize empty rounds
+        const totalRounds = gameData.game.totalRounds || 5;
+        setRounds(Array(totalRounds).fill(null).map(() => []));
+      } catch (error) {
+        console.error('Error parsing temporary wines:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load wines. Please go back to Wine List.",
+          variant: "destructive"
+        });
+      }
     }
-  }, [bottlesData, gameData, hasUnsavedChanges]);
+  }, [tempWinesJson, gameData, toast]);
 
   // Calculate unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
   const unassignedWines = wines.filter(w => !assignedWineIds.has(w.id));
 
-  // Auto assign functionality
-  const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
-  const [hasBeenReset, setHasBeenReset] = useState(false);
+  // Save wines and rounds mutation
+  const saveWinesAndRoundsMutation = useMutation({
+    mutationFn: async () => {
+      // First save the wines
+      const bottles = wines.map((wine, index) => ({
+        labelName: wine.labelName,
+        funName: wine.funName || null,
+        price: Math.round(wine.price * 100), // Convert to cents
+        gameId: gameId!,
+        originalIndex: index
+      }));
 
+      const bottlesResponse = await apiRequest('PUT', `/api/games/${gameId}/bottles`, { bottles }, {
+        'Authorization': `Bearer ${hostToken}`
+      });
+
+      if (!bottlesResponse.ok) {
+        throw new Error('Failed to save wines');
+      }
+
+      const bottlesData = await bottlesResponse.json();
+      
+      // Map temporary IDs to real database IDs
+      const idMapping = new Map<string, string>();
+      bottlesData.bottles.forEach((dbBottle: any, index: number) => {
+        const tempWine = wines[index];
+        if (tempWine) {
+          idMapping.set(tempWine.id, dbBottle.id);
+        }
+      });
+
+      // Then organize rounds with real IDs
+      const roundData = rounds.map((round, roundIndex) => ({
+        roundIndex,
+        bottleIds: round.map(wine => idMapping.get(wine.id) || wine.id)
+      }));
+
+      const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData }, {
+        'Authorization': `Bearer ${hostToken}`
+      });
+
+      if (!organizeResponse.ok) {
+        throw new Error('Failed to organize rounds');
+      }
+
+      return organizeResponse.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
+      
+      // Clear temporary wines from session storage
+      sessionStorage.removeItem(`game-${gameId}-tempWines`);
+      
+      toast({
+        title: "Success",
+        description: "Wines and rounds saved successfully!"
+      });
+      
+      // Navigate to lobby
+      navigate(`/lobby/${gameId}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save wines and rounds.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Auto assign functionality
   const handleAutoAssign = () => {
     if (unassignedWines.length === 0) return;
     
-    // Shuffle unassigned wines
     const shuffled = [...unassignedWines].sort(() => Math.random() - 0.5);
     const newRounds = [...rounds];
     
-    // Distribute wines evenly across rounds
     let wineIndex = 0;
     for (let roundIndex = 0; roundIndex < newRounds.length; roundIndex++) {
       const remainingSlots = (gameData?.game?.bottlesPerRound || 4) - newRounds[roundIndex].length;
@@ -330,25 +349,18 @@ export default function Rounds() {
   };
 
   const handleReset = () => {
-    console.log("Reset button clicked - clearing all rounds");
-    // Clear all rounds to move wines back to unassigned
     const totalRounds = gameData?.game?.totalRounds || 5;
-    const emptyRounds = Array(totalRounds).fill(0).map(() => []);
-    console.log("Setting rounds to empty:", emptyRounds);
-    setRounds(emptyRounds);
+    setRounds(Array(totalRounds).fill(0).map(() => []));
     setHasAutoAssigned(false);
-    setHasBeenReset(true);
   };
 
   const handleMixEmUp = () => {
     const allAssignedWines = rounds.flat();
     if (allAssignedWines.length === 0) return;
     
-    // Shuffle assigned wines
     const shuffled = [...allAssignedWines].sort(() => Math.random() - 0.5);
     const newRounds = Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []);
     
-    // Redistribute shuffled wines
     let wineIndex = 0;
     for (let roundIndex = 0; roundIndex < newRounds.length; roundIndex++) {
       const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
@@ -361,51 +373,12 @@ export default function Rounds() {
     setRounds(newRounds);
   };
 
-  // Auto assign on first load when all wines are unassigned (but not after manual reset)
+  // Auto assign on first load
   useEffect(() => {
-    if (wines.length > 0 && !hasAutoAssigned && !hasBeenReset && unassignedWines.length === wines.length) {
+    if (wines.length > 0 && !hasAutoAssigned && unassignedWines.length === wines.length) {
       handleAutoAssign();
     }
-  }, [wines.length, hasAutoAssigned, hasBeenReset, unassignedWines.length]);
-
-  // Mutation to save bottle assignments
-  const updateBottlesMutation = useMutation({
-    mutationFn: async (roundData: { roundIndex: number; bottleIds: string[] }[]) => {
-      const result = await apiRequest(
-        "POST",
-        `/api/games/${gameId}/bottles/organize`,
-        { rounds: roundData },
-        {
-          headers: {
-            "Authorization": `Bearer ${hostToken}`
-          }
-        }
-      );
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
-      toast({
-        title: "Bottles organized successfully",
-        description: "Wine assignments have been saved.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error organizing bottles",
-        description: error.message || "Failed to save wine assignments.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Track unsaved changes
-  useEffect(() => {
-    const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
-    if (totalAssigned > 0) {
-      setHasUnsavedChanges(true);
-    }
-  }, [rounds]);
+  }, [wines.length, hasAutoAssigned, unassignedWines.length]);
 
   const handleAddWinesToRound = (roundIndex: number, wineIds: string[]) => {
     setRounds(prev => {
@@ -424,165 +397,108 @@ export default function Rounds() {
     });
   };
 
-  const handleSaveOrganization = async () => {
-    // Validate organization before saving
-    const errors = [];
-    
-    // Check that all bottles are assigned
+  const handleSave = async () => {
+    // Validate organization
     const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
     if (totalAssigned !== wines.length) {
-      errors.push(`All ${wines.length} bottles must be assigned to rounds (${totalAssigned} currently assigned)`);
-    }
-    
-    // Check for correct bottles per round
-    if (gameData?.game?.bottlesPerRound) {
-      const expectedPerRound = gameData.game.bottlesPerRound;
-      rounds.forEach((round, index) => {
-        if (round.length !== expectedPerRound) {
-          errors.push(`Round ${index + 1} has ${round.length} bottles, expected ${expectedPerRound}`);
-        }
-      });
-    }
-    
-    // Check for duplicate assignments
-    const allAssignedIds = new Set();
-    const duplicates = [];
-    rounds.forEach((round) => {
-      round.forEach((wine) => {
-        if (allAssignedIds.has(wine.id)) {
-          duplicates.push(wine.labelName);
-        }
-        allAssignedIds.add(wine.id);
-      });
-    });
-    
-    if (duplicates.length > 0) {
-      errors.push(`Bottles assigned to multiple rounds: ${duplicates.join(", ")}`);
-    }
-    
-    if (errors.length > 0) {
       toast({
-        title: "Organization Error",
-        description: errors.join(". "),
-        variant: "destructive",
+        title: "Error",
+        description: `All ${wines.length} wines must be assigned to rounds (${totalAssigned} currently assigned)`,
+        variant: "destructive"
       });
       return;
     }
 
-    const roundData = rounds.map((roundWines, roundIndex) => ({
-      roundIndex,
-      bottleIds: roundWines.map(w => w.id)
-    }));
-
-    updateBottlesMutation.mutate(roundData);
-  };
-
-  const handleStartGame = async () => {
-    try {
-      await apiRequest(
-        "POST",
-        `/api/games/${gameId}/start`,
-        undefined,
-        {
-          headers: {
-            "Authorization": `Bearer ${hostToken}`
-          }
-        }
-      );
+    // Validate bottles per round
+    if (gameData?.game?.bottlesPerRound) {
+      const invalidRounds = rounds
+        .map((round, index) => ({ round, index }))
+        .filter(({ round }) => round.length !== gameData.game.bottlesPerRound);
       
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
-      toast({
-        title: "Game started!",
-        description: "Players can now join the lobby.",
-      });
-      
-      navigate(`/lobby/${gameId}?hostToken=${hostToken}`);
-    } catch (error: any) {
-      toast({
-        title: "Error starting game",
-        description: error.message || "Failed to start the game.",
-        variant: "destructive",
-      });
+      if (invalidRounds.length > 0) {
+        const errors = invalidRounds.map(({ round, index }) => 
+          `Round ${index + 1}: ${round.length} wines (expected ${gameData.game.bottlesPerRound})`
+        );
+        toast({
+          title: "Error",
+          description: errors.join(', '),
+          variant: "destructive"
+        });
+        return;
+      }
     }
+
+    // Save wines and rounds
+    await saveWinesAndRoundsMutation.mutateAsync();
   };
 
-  if (isLoading || bottlesLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading game data</div>;
   if (!gameData) return <div>Game not found</div>;
+  if (!tempWinesJson) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <WineyHeader />
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No wines found</h1>
+          <p className="text-gray-600 mb-6">Please add wines in the Wine List page first.</p>
+          <Button onClick={() => navigate(`/wine-list/${gameId}`)}>
+            Go to Wine List
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const { game } = gameData;
-  const totalAssigned = rounds.reduce((sum, round) => sum + round.length, 0);
-  const allBottlesAssigned = totalAssigned === wines.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
-            Rounds
-          </h1>
-          <p className="text-gray-600 text-center">
-            Assign your {wines.length} wines to {game.totalRounds} rounds ({game.bottlesPerRound} wines per round)
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Organize Wine Rounds</h1>
+          <p className="text-gray-600">Drag and organize your {wines.length} wines into {game.totalRounds} rounds</p>
         </div>
 
-        {/* Control buttons */}
-        <div className="flex gap-3 mb-6 justify-center">
+        {/* Action buttons */}
+        <div className="mb-6 flex flex-wrap gap-2">
           <Button
             onClick={handleAutoAssign}
             disabled={unassignedWines.length === 0}
             variant="outline"
-            size="sm"
+            className="flex items-center gap-2"
           >
-            🤖 Auto Assign
+            <Shuffle className="h-4 w-4" />
+            Auto-Assign ({unassignedWines.length} unassigned)
           </Button>
-          
           <Button
             onClick={handleMixEmUp}
             disabled={rounds.flat().length === 0}
             variant="outline"
-            size="sm"
+            className="flex items-center gap-2"
           >
-            🔀 Mix 'Em Up
+            <Shuffle className="h-4 w-4" />
+            Mix 'Em Up
           </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={rounds.flat().length === 0}
-                variant="outline"
-                size="sm"
-              >
-                🔄 Reset
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset Wine Organization</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will clear all round assignments and move all wines back to the unassigned section. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReset}>
-                  Reset All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button
+            onClick={handleReset}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset All
+          </Button>
         </div>
 
         {/* Rounds grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {rounds.map((roundWines, roundIndex) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {rounds.map((round, index) => (
             <RoundCard
-              key={roundIndex}
-              round={roundIndex}
-              wines={roundWines}
-              bottlesPerRound={game.bottlesPerRound}
+              key={index}
+              round={index}
+              wines={round}
+              bottlesPerRound={game.bottlesPerRound || 4}
               availableWines={unassignedWines}
               onAddWines={handleAddWinesToRound}
               onRemoveWine={handleRemoveWineFromRound}
@@ -590,43 +506,21 @@ export default function Rounds() {
           ))}
         </div>
 
-        {/* Unassigned wines */}
-        {unassignedWines.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Unassigned Wines
-                <Badge variant="outline">
-                  {unassignedWines.length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {unassignedWines.map((wine, index) => (
-                  <WineTile key={wine.id} wine={wine} index={index} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex gap-4 justify-center">
+        {/* Save button */}
+        <div className="flex justify-end">
           <Button
-            onClick={handleSaveOrganization}
-            disabled={updateBottlesMutation.isPending}
-            variant="outline"
+            onClick={handleSave}
+            disabled={saveWinesAndRoundsMutation.isPending}
+            className="flex items-center gap-2"
           >
-            {updateBottlesMutation.isPending ? "Saving..." : "Save Organization"}
-          </Button>
-          
-          <Button
-            onClick={handleStartGame}
-            disabled={!allBottlesAssigned}
-            className="bg-wine hover:bg-wine/90"
-          >
-            Start Game
+            {saveWinesAndRoundsMutation.isPending ? (
+              <>Saving...</>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save & Continue
+              </>
+            )}
           </Button>
         </div>
       </div>

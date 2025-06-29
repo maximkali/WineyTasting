@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/common/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Input } from "@/common/ui/input";
@@ -58,35 +58,12 @@ export default function WineList() {
     }
   }, [bottlesData]);
 
-  // Save wines mutation
-  const saveWinesMutation = useMutation({
-    mutationFn: async (wineList: Wine[]) => {
-      const bottles = wineList.map(wine => ({
-        labelName: wine.labelName,
-        funName: wine.funName || null,
-        price: Math.round(wine.price * 100), // Convert to cents
-        gameId: gameId!
-      }));
-
-      return apiRequest('POST', `/api/games/${gameId}/bottles`, { bottles }, {
-        'Authorization': `Bearer ${hostToken}`
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/games', gameId, 'bottles'] });
-      toast({
-        title: "Success",
-        description: "Wines saved successfully!"
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error", 
-        description: "Failed to save wines. Please try again.",
-        variant: "destructive"
-      });
+  // Store wines in session storage when they change
+  useEffect(() => {
+    if (gameId && wines.length > 0) {
+      sessionStorage.setItem(`game-${gameId}-tempWines`, JSON.stringify(wines));
     }
-  });
+  }, [wines, gameId]);
 
   const addWine = () => {
     if (!formData.labelName || !formData.price) {
@@ -123,19 +100,6 @@ export default function WineList() {
     setWines(wines.filter(w => w.id !== id));
   };
 
-  const handleSave = () => {
-    if (wines.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one wine",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    saveWinesMutation.mutate(wines);
-  };
-
   const handleNext = () => {
     if (wines.length === 0) {
       toast({
@@ -146,12 +110,18 @@ export default function WineList() {
       return;
     }
 
-    // Save first, then navigate
-    saveWinesMutation.mutate(wines, {
-      onSuccess: () => {
-        navigate(`/rounds/${gameId}`);
-      }
-    });
+    if (wines.length !== game.totalBottles) {
+      toast({
+        title: "Warning",
+        description: `You have ${wines.length} wines but the game expects ${game.totalBottles}. Please add more wines.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Store wines in session storage and navigate
+    sessionStorage.setItem(`game-${gameId}-tempWines`, JSON.stringify(wines));
+    navigate(`/rounds/${gameId}`);
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -259,18 +229,10 @@ export default function WineList() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={saveWinesMutation.isPending || wines.length === 0}
-          >
-            {saveWinesMutation.isPending ? "Saving..." : "Save Wines"}
-          </Button>
-          
+        <div className="flex justify-end">
           <Button
             onClick={handleNext}
-            disabled={saveWinesMutation.isPending || wines.length === 0}
+            disabled={wines.length === 0}
             className="flex items-center gap-2"
           >
             Continue to Rounds
