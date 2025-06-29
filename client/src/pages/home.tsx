@@ -65,7 +65,7 @@ export default function Home() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="hostName" className="text-base font-medium">
-                  Your Display Name
+                  You'll be the game host
                 </Label>
                 <Input
                   id="hostName"
@@ -76,9 +76,6 @@ export default function Home() {
                   className="mt-2"
                   maxLength={15}
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  3-15 characters, you'll be the game host
-                </p>
               </div>
 
               <Button
