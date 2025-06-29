@@ -26,7 +26,7 @@ export default function Setup() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Host name form state for initial game creation
+  // Form state for initial game creation (when no gameId)
   const [hostName, setHostName] = useState("");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
 
@@ -190,18 +190,27 @@ export default function Setup() {
 
   // All hooks must be declared before any conditional returns
   const createGameMutation = useMutation({
-    mutationFn: async (hostName: string) => {
-      const res = await apiRequest("POST", "/api/games", { hostName });
+    mutationFn: async (data: { hostName: string; config: GameSetupOption }) => {
+      // Create game with initial configuration
+      const res = await apiRequest("POST", "/api/games", {
+        hostDisplayName: data.hostName,
+        maxPlayers: data.config.players,
+        totalBottles: data.config.bottles,
+        totalRounds: data.config.rounds,
+        bottlesPerRound: data.config.bottlesPerRound,
+        bottleEqPerPerson: data.config.bottleEqPerPerson,
+        ozPerPersonPerBottle: data.config.ozPerPersonPerBottle,
+      });
       return res.json();
     },
     onSuccess: (data) => {
       // Store the host token
       sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
-      // Navigate to setup with the new game ID
-      setLocation(`/setup/${data.game.id}`);
+      // Navigate to wine entry step with the new game ID
+      setLocation(`/setup/${data.game.id}?step=wines`);
       toast({
         title: "Game Created",
-        description: "Your wine tasting game has been created!",
+        description: "Now let's add your wines!",
       });
     },
     onError: (error) => {
@@ -470,19 +479,21 @@ export default function Setup() {
 
 
   
-  // Show host name form if no gameId (initial setup flow)
+  // Show complete setup form if no gameId (initial setup flow)
   if (!gameId) {
-    const handleCreateGame = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (hostName.trim()) {
-        createGameMutation.mutate(hostName.trim());
+    const handleCreateGame = () => {
+      if (hostName.trim() && selectedConfig) {
+        createGameMutation.mutate({
+          hostName: hostName.trim(),
+          config: selectedConfig
+        });
       }
     };
 
     return (
       <div className="min-h-screen bg-gray-50">
         <WineyHeader />
-        <div className="container max-w-md mx-auto p-6 space-y-6">
+        <div className="container max-w-2xl mx-auto p-6 space-y-6">
           <div className="flex items-center gap-4 mb-4">
             <Button
               variant="ghost"
@@ -496,34 +507,135 @@ export default function Setup() {
           </div>
           
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">Let's Get Started!</h1>
-            <p className="text-muted-foreground">Enter your name to create a new wine tasting game.</p>
+            <h1 className="text-2xl font-bold">Setup</h1>
+            <p className="text-muted-foreground">Enter your name and choose the player, bottle, and round counts below, then click Next.</p>
           </div>
 
           <Card>
-            <CardContent className="pt-6">
-              <form onSubmit={handleCreateGame} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hostName">Host Name</Label>
-                  <Input
-                    id="hostName"
-                    type="text"
-                    placeholder="Enter your name"
-                    value={hostName}
-                    onChange={(e) => setHostName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  size="lg"
-                  disabled={!hostName.trim() || createGameMutation.isPending}
+            <CardContent className="pt-6 space-y-6">
+              {/* Host Name */}
+              <div className="space-y-2">
+                <Label htmlFor="hostName">Host Name</Label>
+                <Input
+                  id="hostName"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={hostName}
+                  onChange={(e) => setHostName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Separator />
+
+              {/* Players Dropdown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium uppercase text-muted-foreground">
+                  Number of Players:
+                </Label>
+                <Select value={selectedPlayers?.toString()} onValueChange={(value) => {
+                  setSelectedPlayers(parseInt(value));
+                  setSelectedBottles(null);
+                  setSelectedConfig(null);
+                }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select players" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {playerOptions.map(count => (
+                      <SelectItem key={count} value={count.toString()}>
+                        {count}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Bottles Dropdown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium uppercase text-muted-foreground">
+                  Number of Bottles:
+                </Label>
+                <Select 
+                  value={selectedBottles?.toString()} 
+                  onValueChange={(value) => {
+                    setSelectedBottles(parseInt(value));
+                  }}
+                  disabled={!selectedPlayers}
                 >
-                  {createGameMutation.isPending ? "Creating Game..." : "Create Game"}
-                </Button>
-              </form>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={selectedPlayers ? "Select bottles" : "First select players"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bottleOptions.map(option => (
+                      <SelectItem key={option.bottles} value={option.bottles.toString()}>
+                        {option.bottles}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Rounds Dropdown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium uppercase text-muted-foreground">
+                  Number of Rounds:
+                </Label>
+                <Select 
+                  value={selectedConfig?.rounds.toString()} 
+                  onValueChange={(value) => {
+                    const selected = roundOptions.find(opt => opt.rounds === parseInt(value));
+                    if (selected) {
+                      setSelectedConfig(selected);
+                    }
+                  }}
+                  disabled={!selectedBottles}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={selectedBottles ? "Select rounds" : "First select bottles"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roundOptions.map(option => (
+                      <SelectItem key={option.rounds} value={option.rounds.toString()}>
+                        {option.rounds}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Config Summary */}
+              {selectedConfig && (
+                <div className="space-y-4">
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-sm text-muted-foreground">Bottles Per Round</div>
+                        <div className="text-2xl font-bold text-wine">{selectedConfig.bottlesPerRound}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-muted-foreground">Pour Size</div>
+                        <div className="text-2xl font-bold text-wine">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm leading-relaxed">
+                        In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {selectedConfig.ozPerPersonPerBottle} oz. That adds up to {(selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle / 25.36) * 100)}% of a standard 750ml bottle).
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleCreateGame} 
+                    disabled={!hostName.trim() || !selectedConfig || createGameMutation.isPending}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {createGameMutation.isPending ? "Creating Game..." : "Next"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
