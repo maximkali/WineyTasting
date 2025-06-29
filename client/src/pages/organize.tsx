@@ -275,6 +275,7 @@ export default function Organize() {
 
   // Auto assign functionality
   const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
+  const [hasBeenReset, setHasBeenReset] = useState(false);
 
   const handleAutoAssign = () => {
     if (unassignedWines.length === 0) return;
@@ -294,6 +295,7 @@ export default function Organize() {
     }
     
     setRounds(newRounds);
+    setHasAutoAssigned(true);
   };
 
   const handleReset = () => {
@@ -304,6 +306,7 @@ export default function Organize() {
     console.log("Setting rounds to empty:", emptyRounds);
     setRounds(emptyRounds);
     setHasAutoAssigned(false);
+    setHasBeenReset(true);
   };
 
   const handleMixEmUp = () => {
@@ -327,13 +330,12 @@ export default function Organize() {
     setRounds(newRounds);
   };
 
-  // Auto assign on first load when all wines are unassigned
+  // Auto assign on first load when all wines are unassigned (but not after manual reset)
   useEffect(() => {
-    if (wines.length > 0 && !hasAutoAssigned && unassignedWines.length === wines.length) {
+    if (wines.length > 0 && !hasAutoAssigned && !hasBeenReset && unassignedWines.length === wines.length) {
       handleAutoAssign();
-      setHasAutoAssigned(true);
     }
-  }, [wines.length, hasAutoAssigned, unassignedWines.length]);
+  }, [wines.length, hasAutoAssigned, hasBeenReset, unassignedWines.length]);
 
   // Mutation to save bottle assignments
   const updateBottlesMutation = useMutation({
