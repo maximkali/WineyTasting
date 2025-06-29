@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DragEndEvent, DndContext, closestCorners, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DragEndEvent, DndContext, closestCorners, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -74,6 +74,56 @@ function SortableWine({ wine, index }: SortableWineProps) {
   );
 }
 
+interface AvailableWinesCardProps {
+  wines: Wine[];
+}
+
+function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: 'unassigned',
+  });
+  
+  const style = {
+    backgroundColor: isOver ? 'rgba(34, 197, 94, 0.1)' : undefined,
+  };
+  
+  return (
+    <Card 
+      ref={setNodeRef}
+      className={`transition-colors ${isOver ? 'border-green-500 bg-green-50' : ''}`}
+      style={style}
+    >
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-lg">
+          <span>Available Wines</span>
+          <Badge variant="secondary">
+            {wines.length} remaining
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <SortableContext 
+          items={wines.map(w => w.id)}
+          strategy={rectSortingStrategy}
+        >
+          <div className="max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {wines.map((wine, index) => (
+                <SortableWine key={wine.id} wine={wine} index={index} />
+              ))}
+            </div>
+            {wines.length === 0 && (
+              <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                All wines assigned to rounds
+              </div>
+            )}
+          </div>
+        </SortableContext>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface RoundCardProps {
   round: number;
   wines: Wine[];
@@ -81,8 +131,20 @@ interface RoundCardProps {
 }
 
 function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `round-${round}`,
+  });
+  
+  const style = {
+    backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : undefined,
+  };
+  
   return (
-    <Card className="min-h-[250px]">
+    <Card 
+      ref={setNodeRef}
+      className={`min-h-[250px] transition-colors ${isOver ? 'border-blue-500 bg-blue-50' : ''}`}
+      style={style}
+    >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-lg">
           <span>Round {round + 1}</span>
@@ -93,14 +155,14 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
       </CardHeader>
       <CardContent>
         <div className="min-h-[200px]">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
           </div>
           {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8 text-sm">
-              Drag wines here
+            <div className="text-center text-gray-400 py-8 text-sm border-2 border-dashed border-gray-300 rounded-lg">
+              Drop wines here
             </div>
           )}
         </div>
@@ -295,51 +357,17 @@ export default function Organize() {
           onDragEnd={handleDragEnd}
         >
           {/* Available Wines - Horizontal layout at top */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-lg">
-                <span>Available Wines</span>
-                <Badge variant="secondary">
-                  {unassignedWines.length} remaining
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SortableContext 
-                items={unassignedWines.map(w => w.id)}
-                strategy={rectSortingStrategy}
-              >
-                <div className="max-h-96 overflow-y-auto" id="unassigned">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {unassignedWines.map((wine, index) => (
-                      <SortableWine key={wine.id} wine={wine} index={index} />
-                    ))}
-                  </div>
-                  {unassignedWines.length === 0 && (
-                    <div className="text-center text-gray-400 py-8">
-                      All wines assigned to rounds
-                    </div>
-                  )}
-                </div>
-              </SortableContext>
-            </CardContent>
-          </Card>
+          <AvailableWinesCard wines={unassignedWines} />
 
           {/* Rounds */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rounds.map((roundWines, roundIndex) => (
-              <div key={roundIndex} id={`round-${roundIndex}`}>
-                <SortableContext 
-                  items={roundWines.map(w => w.id)}
-                  strategy={rectSortingStrategy}
-                >
-                  <RoundCard
-                    round={roundIndex}
-                    wines={roundWines}
-                    bottlesPerRound={bottlesPerRound}
-                  />
-                </SortableContext>
-              </div>
+              <RoundCard
+                key={roundIndex}
+                round={roundIndex}
+                wines={roundWines}
+                bottlesPerRound={bottlesPerRound}
+              />
             ))}
           </div>
 
