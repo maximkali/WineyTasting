@@ -23,7 +23,6 @@ export default function WineList() {
   const { gameId } = useParams<{ gameId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Game data using the hook
   const { data: gameData, isLoading, isError } = useGame(gameId!);
@@ -101,6 +100,9 @@ export default function WineList() {
   };
 
   const handleNext = () => {
+    console.log('[DEBUG] handleNext - wines:', wines);
+    console.log('[DEBUG] handleNext - game.totalBottles:', game.totalBottles);
+    
     if (wines.length === 0) {
       toast({
         title: "Error", 
@@ -120,6 +122,7 @@ export default function WineList() {
     }
 
     // Store wines in session storage and navigate
+    console.log('[DEBUG] Storing wines in session storage:', wines);
     sessionStorage.setItem(`game-${gameId}-tempWines`, JSON.stringify(wines));
     navigate(`/rounds/${gameId}`);
   };
