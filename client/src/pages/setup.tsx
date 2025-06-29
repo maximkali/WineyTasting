@@ -64,7 +64,15 @@ export default function Setup() {
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
     mutationFn: async (config: GameSetupOption) => {
-      const res = await apiRequest("POST", `/api/games/${gameId}/config`, config, {
+      const configData = {
+        maxPlayers: config.players,
+        totalBottles: config.bottles,
+        totalRounds: config.rounds,
+        bottlesPerRound: config.bottlesPerRound,
+        bottleEqPerPerson: config.bottleEqPerPerson,
+        ozPerPersonPerBottle: config.ozPerPersonPerBottle,
+      };
+      const res = await apiRequest("POST", `/api/games/${gameId}/config`, configData, {
         headers: { Authorization: `Bearer ${hostToken}` },
       });
       return res.json();
