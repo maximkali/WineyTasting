@@ -501,6 +501,14 @@ export default function Setup() {
             )}
           </div>
 
+          {!canRandomize && selectedConfig && bottles.length > 0 && (
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Once you've added all your wines, we'll organize them into {selectedConfig.rounds} tasting rounds for you.
+              </p>
+            </div>
+          )}
+
           {canRandomize && (
             <div className="text-center">
               <p className="text-sm text-gray-600">
