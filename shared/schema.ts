@@ -127,6 +127,7 @@ export const addBottlesSchema = z.object({
     labelName: z.string().min(3).max(60),
     funName: z.string().max(40).optional().nullable(),
     price: z.number().min(1),
+    roundIndex: z.number().nullable().optional(),
   })).min(9).max(20),
 });
 

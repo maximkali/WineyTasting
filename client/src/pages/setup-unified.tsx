@@ -76,7 +76,7 @@ export default function SetupUnified() {
   // Create game mutation
   const createGameMutation = useMutation({
     mutationFn: async (displayName: string) => {
-      const response = await apiRequest("POST", "/api/games", { displayName });
+      const response = await apiRequest("POST", "/api/games", { hostDisplayName: displayName });
       return response.json();
     },
     onSuccess: (data) => {
@@ -125,24 +125,9 @@ export default function SetupUnified() {
         roundIndex: wineToRoundMap.get(wine.originalIndex ?? index) ?? null
       }));
       
-      const response = await apiRequest("PUT", `/api/games/${gameId}/bottles`, { bottles: bottlesData }, {
+      await apiRequest("PUT", `/api/games/${gameId}/bottles`, { bottles: bottlesData }, {
         headers: { Authorization: `Bearer ${hostToken}` }
       });
-      
-      const createdBottles = await response.json();
-      
-      // Now update bottles with round assignments using their IDs
-      if (createdBottles.bottles) {
-        for (const bottle of createdBottles.bottles) {
-          if (bottle.roundIndex !== null) {
-            await apiRequest("PATCH", `/api/games/${gameId}/bottles/${bottle.id}`, {
-              roundIndex: bottle.roundIndex
-            }, {
-              headers: { Authorization: `Bearer ${hostToken}` }
-            });
-          }
-        }
-      }
       
       // Start the game
       await apiRequest("POST", `/api/games/${gameId}/start`, undefined, {
