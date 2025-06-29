@@ -475,7 +475,7 @@ export default function Rounds() {
                 <Card key={wine.id} className="p-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-wine-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                      {String.fromCharCode(65 + (wine.originalIndex || wines.findIndex(w => w.id === wine.id)))}
+                      {String.fromCharCode(65 + (wine.originalIndex !== undefined ? wine.originalIndex : wines.findIndex(w => w.id === wine.id)))}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
