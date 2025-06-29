@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Settings, Users, Wine, RotateCcw, Plus } from "lucide-react";
+import { Trash2, Settings, Users, Wine, RotateCcw, Plus, ArrowLeft } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -264,6 +264,17 @@ export default function Setup() {
       <div className="min-h-screen bg-gray-50">
         <WineyHeader />
         <div className="container max-w-2xl mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
+        </div>
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Set up your tasting adventure!</h1>
           <p className="text-muted-foreground">Complete the basic settings below to get started. Then, add each wine's details – we'll need the label name, a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.</p>
@@ -401,6 +412,17 @@ export default function Setup() {
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
       <div className="container max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-4 mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/")}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+      </div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
