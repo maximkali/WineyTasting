@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import WineyHeader from "@/components/winey-header";
 
@@ -15,56 +13,37 @@ export default function Home() {
   const [lastName, setLastName] = useState("");
   const { toast } = useToast();
 
-  const createGameMutation = useMutation({
-    mutationFn: async (hostDisplayName: string) => {
-      const res = await apiRequest("POST", "/api/games", { hostDisplayName });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      console.log("Game created successfully:", data);
-      sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
-      sessionStorage.setItem(`playerId_${data.game.id}`, data.playerId);
-      console.log("Navigating to:", `/setup/${data.game.id}`);
-      
-      // Try multiple navigation methods
-      setLocation(`/setup/${data.game.id}`);
-      
-      // Fallback navigation
-      setTimeout(() => {
-        window.location.href = `/setup/${data.game.id}`;
-      }, 100);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create game. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // Generate temporary game ID for session storage
+  const generateTempGameId = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
 
   const handleCreateGame = () => {
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     
     if (!firstName.trim() || !lastName.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please enter both first and last name.",
+        title: "Please enter your name",
+        description: "Both first and last name are required.",
         variant: "destructive",
       });
       return;
     }
+
+    // Generate temporary game ID and store host info in session
+    const tempGameId = generateTempGameId();
+    const tempHostToken = Math.random().toString(36).substring(2, 32);
     
-    if (fullName.length < 3) {
-      toast({
-        title: "Invalid Name",
-        description: "Name must be at least 3 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
+    sessionStorage.setItem(`tempGame_${tempGameId}`, JSON.stringify({
+      hostDisplayName: fullName,
+      gameId: tempGameId,
+      hostToken: tempHostToken,
+      created: new Date().toISOString(),
+      status: 'temp'
+    }));
     
-    createGameMutation.mutate(fullName);
+    console.log("Starting temporary game:", tempGameId);
+    setLocation(`/setup/${tempGameId}`);
   };
 
   return (
@@ -100,10 +79,10 @@ export default function Home() {
 
               <Button
                 onClick={handleCreateGame}
-                disabled={createGameMutation.isPending || !firstName.trim() || !lastName.trim()}
+                disabled={!firstName.trim() || !lastName.trim()}
                 className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
-                {createGameMutation.isPending ? "Creating..." : "Let's Get Started!"}
+                Let's Get Started!
               </Button>
             </div>
 
@@ -143,12 +122,10 @@ export default function Home() {
                 </Button>
               </div>
             </div>
+
           </CardContent>
         </Card>
 
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>🍷 Sip → 🔢 Rank → ✅ Score → 🥇 Win</p>
-        </div>
         </div>
       </div>
     </div>

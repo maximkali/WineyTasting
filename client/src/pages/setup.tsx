@@ -23,10 +23,24 @@ import {
 export default function Setup() {
   const { gameId } = useParams();
   const [_, setLocation] = useLocation();
-  const hostToken = sessionStorage.getItem(`hostToken_${gameId}`);
-  const { data: gameData, isLoading: gameLoading, error: gameError } = useGame(gameId!);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Check for temporary game data first
+  const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
+  const isTemporaryGame = tempGameData?.status === 'temp';
+  
+  // Use different tokens for temp vs real games
+  const hostToken = isTemporaryGame 
+    ? tempGameData?.hostToken 
+    : sessionStorage.getItem(`hostToken_${gameId}`);
+  
+  // Only fetch from API if it's not a temporary game
+  const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
+    queryKey: [`/api/games/${gameId}`],
+    enabled: !isTemporaryGame && !!gameId && !!hostToken,
+    refetchInterval: 5000,
+  });
 
   // Fetch existing bottles for the game
   const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
