@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  createGameSchema, joinGameSchema, setGameConfigSchema, addBottlesSchema, 
+  createGameSchema, createGameWithConfigSchema, joinGameSchema, setGameConfigSchema, addBottlesSchema, 
   submitTastingSchema, submitGambitSchema 
 } from "@shared/schema";
 import { z } from "zod";
@@ -46,28 +46,29 @@ function scoreRound(correctOrder: string[], playerRank: string[]): number {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Create a new game
+  // Create a minimal game stub for navigation (actual game setup happens later)
   app.post("/api/games", async (req, res) => {
     try {
-      const { hostDisplayName } = createGameSchema.parse(req.body);
+      const { displayName } = createGameSchema.parse(req.body);
       
       const gameId = generateGameCode();
       const hostToken = generateHostToken();
       const playerId = generateId();
       
-      // Create game
+      // Create minimal game record without configuration (just for navigation)
       const game = await storage.createGame({
         id: gameId,
         status: 'setup',
         currentRound: 0,
         hostToken,
+        // All configuration fields will be null until setup is completed
       });
       
       // Create host player
       await storage.createPlayer({
         id: playerId,
         gameId,
-        displayName: hostDisplayName,
+        displayName: displayName,
         score: 0,
         isHost: true,
         status: 'active',
@@ -78,6 +79,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
     }
   });
+
+
 
   // Get game state
   app.get("/api/games/:gameId", async (req, res) => {

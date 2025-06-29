@@ -80,7 +80,7 @@ export default function Home() {
       <main className="flex-1 container max-w-4xl mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold mb-6 text-gray-900">
-            Think you can taste a<br />difference?
+            Think you can taste a difference?
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
             Create a blind wine tasting experience for your friends. Guess, rank, and<br />

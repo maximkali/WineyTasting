@@ -106,7 +106,17 @@ export type InsertGambitSubmission = z.infer<typeof insertGambitSubmissionSchema
 
 // Additional validation schemas
 export const createGameSchema = z.object({
+  displayName: z.string().min(3).max(15),
+});
+
+export const createGameWithConfigSchema = z.object({
   hostDisplayName: z.string().min(3).max(15),
+  maxPlayers: z.number().min(10).max(22),
+  totalBottles: z.number().min(9).max(20),
+  totalRounds: z.number().min(3).max(5),
+  bottlesPerRound: z.number().min(3).max(4),
+  bottleEqPerPerson: z.number().min(0.1).max(1.0),
+  ozPerPersonPerBottle: z.number().min(1.0).max(3.0),
 });
 
 export const joinGameSchema = z.object({
