@@ -297,8 +297,11 @@ export default function Organize() {
   };
 
   const handleReset = () => {
+    console.log("Reset button clicked - clearing all rounds");
     // Clear all rounds to move wines back to unassigned
-    const emptyRounds = Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []);
+    const totalRounds = gameData?.game?.totalRounds || 5;
+    const emptyRounds = Array(totalRounds).fill(0).map(() => []);
+    console.log("Setting rounds to empty:", emptyRounds);
     setRounds(emptyRounds);
     setHasAutoAssigned(false);
   };
