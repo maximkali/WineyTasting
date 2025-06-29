@@ -7,6 +7,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   const handleHostGame = () => {
+    console.log("Host Tasting button clicked - navigating to /setup");
     setLocation("/setup");
   };
 
