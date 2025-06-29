@@ -23,7 +23,7 @@ export function getPlayerAvatar(displayName: string, index: number) {
 }
 
 export function formatPrice(price: number): string {
-  return `$${price}`;
+  return `$${price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 export function getRankEmoji(position: number): string {

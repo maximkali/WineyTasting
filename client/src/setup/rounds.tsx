@@ -11,6 +11,7 @@ import WineyHeader from "@/common/winey-header";
 import { toast, useToast } from "@/common/hooks/use-toast";
 import { queryClient, apiRequest } from "@/common/lib/queryClient";
 import { useGame } from "@/common/hooks/use-game";
+import { formatPrice } from "@/common/lib/game-utils";
 
 interface Wine {
   id: string;
@@ -39,7 +40,7 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-900">${wine.price.toFixed(0)}</span>
+        <span className="text-sm font-semibold text-gray-900">{formatPrice(wine.price)}</span>
         {onRemove && (
           <button
             onClick={onRemove}
@@ -89,19 +90,21 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <span className="text-base font-medium">Round {round + 1}</span>
-          <Badge 
-            variant={wines.length === bottlesPerRound ? "default" : "secondary"}
-            className={wines.length === bottlesPerRound 
-              ? "bg-wine-500 text-white" 
-              : "bg-gray-100 text-gray-600"
-            }
-          >
-            <span className="text-xs">{wines.length}/{bottlesPerRound}</span>
-          </Badge>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              Sum: {formatPrice(wines.reduce((sum, wine) => sum + wine.price, 0))}
+            </span>
+            <Badge 
+              variant={wines.length === bottlesPerRound ? "default" : "secondary"}
+              className={wines.length === bottlesPerRound 
+                ? "bg-green-500 text-white" 
+                : "bg-gray-100 text-gray-600"
+              }
+            >
+              {wines.length}/{bottlesPerRound}
+            </Badge>
+          </div>
         </CardTitle>
-        {wines.length === bottlesPerRound && (
-          <p className="text-sm text-green-600 mt-2">Round is full</p>
-        )}
       </CardHeader>
       <CardContent className="pt-0">
         {wines.length === 0 ? (
@@ -123,14 +126,10 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
           <div className="mt-4">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Wines
-                </Button>
+                <button className="w-full p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-gray-700">
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">Add Wines</span>
+                </button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
@@ -418,7 +417,7 @@ export default function Rounds() {
         </div>
 
         {/* Action buttons */}
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap gap-2 justify-center">
           <Button
             onClick={handleAutoAssign}
             disabled={unassignedWines.length === 0}
@@ -484,7 +483,7 @@ export default function Rounds() {
                       </p>
                       <p className="text-xs text-gray-500 truncate">{wine.labelName}</p>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">${wine.price}</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatPrice(wine.price)}</span>
                   </div>
                 </Card>
               ))}
