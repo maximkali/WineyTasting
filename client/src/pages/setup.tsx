@@ -362,7 +362,7 @@ export default function Setup() {
                   </div>
                   <div className="bg-white border rounded-lg p-4 text-center">
                     <div className="text-sm font-medium uppercase text-muted-foreground mb-2">
-                      Pour per Tasting:
+                      Max Pour per Tasting:
                     </div>
                     <div className="text-2xl font-bold text-wine">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
                   </div>
