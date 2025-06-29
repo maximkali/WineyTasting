@@ -27,6 +27,18 @@ export default function Setup() {
   const { data: gameData, isLoading: gameLoading, error: gameError } = useGame(gameId!);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Fetch existing bottles for the game
+  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+    queryKey: [`/api/games/${gameId}/bottles`],
+    enabled: !!gameId && !!hostToken && !!gameData?.game,
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
+        headers: { Authorization: `Bearer ${hostToken}` },
+      });
+      return response.json();
+    },
+  });
   
   // Game configuration state
   const [selectedPlayers, setSelectedPlayers] = useState<number | null>(null);
@@ -65,6 +77,38 @@ export default function Setup() {
       })));
     }
   }, [selectedConfig]);
+
+  // Effect to load existing bottles and configuration when returning from organize page
+  useEffect(() => {
+    if (gameData?.game && bottlesData?.bottles) {
+      const game = gameData.game;
+      
+      // Set configuration from game data
+      if (game.totalBottles && game.maxPlayers && game.totalRounds && game.bottlesPerRound) {
+        setSelectedPlayers(game.maxPlayers);
+        setSelectedBottles(game.totalBottles);
+        setSelectedConfig({
+          players: game.maxPlayers,
+          bottles: game.totalBottles,
+          rounds: game.totalRounds,
+          bottlesPerRound: game.bottlesPerRound,
+          bottleEqPerPerson: game.bottleEqPerPerson || 0,
+          ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
+        });
+        
+        // Load existing bottles data
+        if (bottlesData.bottles.length > 0) {
+          const existingBottles = bottlesData.bottles.map((bottle: any) => ({
+            labelName: bottle.labelName || "",
+            funName: bottle.funName || "",
+            price: (bottle.price / 100).toString() // Convert from cents back to dollars
+          }));
+          setBottles(existingBottles);
+          setConfigurationStep('wines');
+        }
+      }
+    }
+  }, [gameData, bottlesData]);
 
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
@@ -149,7 +193,7 @@ export default function Setup() {
   });
 
   // Show loading while game data is being fetched
-  if (gameLoading) {
+  if (gameLoading || bottlesLoading) {
     return (
       <div className="container max-w-2xl mx-auto p-6 flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -540,13 +584,23 @@ export default function Setup() {
             </Button>
             
             {canRandomize && (
-              <Button 
-                onClick={() => randomizeMutation.mutate()}
-                disabled={randomizeMutation.isPending}
-                className="flex-1"
-              >
-                {randomizeMutation.isPending ? "Randomizing..." : `Randomize into ${selectedConfig?.rounds} Rounds`}
-              </Button>
+              <>
+                <Button 
+                  onClick={() => setLocation(`/organize/${gameId}?hostToken=${hostToken}`)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Organize Wines
+                </Button>
+                
+                <Button 
+                  onClick={() => randomizeMutation.mutate()}
+                  disabled={randomizeMutation.isPending}
+                  className="flex-1"
+                >
+                  {randomizeMutation.isPending ? "Randomizing..." : `Auto-Assign to ${selectedConfig?.rounds} Rounds`}
+                </Button>
+              </>
             )}
           </div>
 

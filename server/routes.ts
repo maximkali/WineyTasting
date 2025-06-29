@@ -224,6 +224,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get bottles for a game
+  app.get("/api/games/:gameId/bottles", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const hostToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      const game = await storage.getGame(gameId);
+      if (!game || game.hostToken !== hostToken) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const bottles = await storage.getBottlesByGame(gameId);
+      res.json({ bottles });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch bottles' });
+    }
+  });
+
   // Organize bottles into rounds manually
   app.post("/api/games/:gameId/bottles/organize", async (req, res) => {
     try {
