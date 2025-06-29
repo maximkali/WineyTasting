@@ -296,8 +296,10 @@ export default function Organize() {
     setRounds(newRounds);
   };
 
-  const handleUnassignAll = () => {
-    setRounds(Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []));
+  const handleReset = () => {
+    // Clear all rounds to move wines back to unassigned
+    const emptyRounds = Array(gameData?.game?.totalRounds || 5).fill(null).map(() => []);
+    setRounds(emptyRounds);
     setHasAutoAssigned(false);
   };
 
@@ -443,12 +445,12 @@ export default function Organize() {
           </Button>
           
           <Button
-            onClick={handleUnassignAll}
+            onClick={handleReset}
             disabled={rounds.flat().length === 0}
             variant="outline"
             size="sm"
           >
-            Unassign All
+            Reset
           </Button>
           
           <Button
