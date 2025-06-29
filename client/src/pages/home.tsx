@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,9 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Wine, Trophy, BarChart3, CheckCircle2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Game } from "@shared/schema";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -22,28 +20,6 @@ export default function Home() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showHostDialog, setShowHostDialog] = useState(false);
-
-  const createGameMutation = useMutation({
-    mutationFn: async () => {
-      const displayName = `${firstName} ${lastName}`.trim();
-      if (!displayName) throw new Error("Please enter your name");
-      
-      const res = await apiRequest("POST", "/api/games", { displayName });
-      return res.json() as Promise<{ game: Game; hostToken: string }>;
-    },
-    onSuccess: (data) => {
-      // Store host token in session storage
-      sessionStorage.setItem("hostToken", data.hostToken);
-      setLocation(`/setup/${data.game.id}`);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleHostGame = () => {
     setShowHostDialog(true);
@@ -58,7 +34,11 @@ export default function Home() {
       });
       return;
     }
-    createGameMutation.mutate();
+    
+    // Store host name in session storage and go directly to setup form
+    const displayName = `${firstName} ${lastName}`.trim();
+    sessionStorage.setItem("hostDisplayName", displayName);
+    setLocation("/setup");
   };
 
   return (
@@ -92,9 +72,8 @@ export default function Home() {
               onClick={handleHostGame}
               size="lg"
               className="bg-[#8B1A1A] hover:bg-[#7A1515] text-white font-medium px-8 py-3 text-base rounded-lg"
-              disabled={createGameMutation.isPending}
             >
-              {createGameMutation.isPending ? "Creating..." : "Host Tasting"}
+              Host Tasting
             </Button>
             <Button 
               onClick={() => setLocation("/join")}
@@ -225,10 +204,9 @@ export default function Home() {
             </Button>
             <Button
               onClick={handleCreateGame}
-              disabled={createGameMutation.isPending}
               className="bg-[#8B1A1A] hover:bg-[#7A1515] text-white"
             >
-              {createGameMutation.isPending ? "Creating..." : "Create Game"}
+              Create Game
             </Button>
           </DialogFooter>
         </DialogContent>

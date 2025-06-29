@@ -15,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/setup/:gameId" component={Setup} />
+      <Route path="/setup" component={Setup} />
       <Route path="/organize/:gameId" component={Organize} />
       <Route path="/join/:gameCode" component={Join} />
       <Route path="/lobby/:gameId" component={Lobby} />
