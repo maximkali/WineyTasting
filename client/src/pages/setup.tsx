@@ -379,11 +379,7 @@ export default function Setup() {
 
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm leading-relaxed">
-                    In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines in each of {selectedConfig.rounds} rounds. 
-                    For each wine, pour yourself {selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz. Over the course of the game, 
-                    you'll taste a total of {selectedConfig.bottles} different wines, with each participant receiving approximately {(selectedConfig.bottleEqPerPerson * 25.36).toFixed(2)} oz total 
-                    (about {(selectedConfig.bottleEqPerPerson * 100).toFixed(0)}% of a standard 750ml bottle). Take notes on each wine's aroma, 
-                    flavor, and finish to compare and discuss with other participants.
+                    In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {selectedConfig.ozPerPersonPerBottle} oz. That adds up to {(selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle / 25.36) * 100)}% of a standard 750ml bottle). After each tasting, competitors should jot down notes on aroma, flavor, and finish, then stack rank the four wines from that round. One point is awarded for each wine correctly placed in the price order that round. The player with the highest total score at the end wins.
                   </p>
                 </div>
                 
@@ -431,13 +427,6 @@ export default function Setup() {
             </div>
           )}
         </CardHeader>
-        {selectedConfig && (
-          <div className="px-6 pb-4">
-            <p className="text-sm text-muted-foreground">
-              In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines across {selectedConfig.rounds} rounds – {selectedConfig.bottles} wines total. For each wine, pour up to {selectedConfig.ozPerPersonPerBottle} oz. That adds up to {(selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle).toFixed(2)} oz per person over the full game (roughly {Math.round((selectedConfig.bottles * selectedConfig.ozPerPersonPerBottle / 25.36) * 100)}% of a standard 750ml bottle). After each tasting, competitors should jot down notes on aroma, flavor, and finish, then stack rank the four wines from that round. One point is awarded for each wine correctly placed in the price order that round. The player with the highest total score at the end wins.
-            </p>
-          </div>
-        )}
         <CardContent className="space-y-6">
           <div className="flex gap-4">
             <Button onClick={fillSampleWines} variant="outline" className="flex-1">
