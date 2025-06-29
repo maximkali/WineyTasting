@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Settings, Users, Wine, RotateCcw, Plus, ArrowLeft } from "lucide-react";
+import { Trash2, Settings, Users, Wine, RotateCcw, Plus } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -408,27 +408,12 @@ export default function Setup() {
     addBottlesMutation.mutate(bottlesData);
   };
 
-  const resetConfiguration = () => {
-    setConfigurationStep('config');
-    // Don't clear the data when going back - preserve existing entries
-  };
-
   if (configurationStep === 'config') {
     return (
       <div className="min-h-screen bg-gray-50">
         <WineyHeader />
         <div className="container max-w-2xl mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-4 mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
+
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Setup</h1>
           <p className="text-muted-foreground">Choose the player, bottle, and round counts below, then click Next. On the next screen enter each wine’s label name, blind nickname, and price. After that you’ll assign the wines to their rounds. You can edit or reorder anything until you press Start.</p>
@@ -566,17 +551,7 @@ export default function Setup() {
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
       <div className="container max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4 mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetConfiguration}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Setup
-        </Button>
-      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">

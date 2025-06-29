@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -83,18 +83,7 @@ export default function Lobby() {
   return (
     <div className="min-h-screen bg-warm-white">
       <div className="max-w-4xl mx-auto p-4">
-        {/* Back button */}
-        <div className="flex items-center gap-4 mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
+
         
         {/* Header */}
         <div className="text-center mb-8 mt-6">
