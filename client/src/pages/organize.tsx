@@ -262,6 +262,8 @@ export default function Organize() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
+    console.log("Drag ended:", { activeId: active.id, overId: over?.id });
+    
     if (!over || active.id === over.id) return;
 
     const wineId = active.id as string;
