@@ -16,12 +16,13 @@ export default function Home() {
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Are you hosting a blind tasting? Enter your...</p>
+                  <p className="text-sm text-gray-500">Hosting a blind tasting?</p>
                 </div>
 
                 <Button
+                  variant="outline"
                   onClick={() => setLocation('/setup')}
-                  className="w-full bg-[#C17A8C] text-white py-3 rounded-full font-medium hover:bg-[#B06E80] transition-colors"
+                  className="border-red-500 text-red-500 hover:bg-red-50"
                 >
                   Let's Get Started!
                 </Button>
