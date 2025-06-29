@@ -222,7 +222,7 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
   );
 }
 
-export default function Organize() {
+export default function Rounds() {
   const { gameId } = useParams<{ gameId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
