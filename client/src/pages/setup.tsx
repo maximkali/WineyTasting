@@ -26,6 +26,8 @@ export default function Setup() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  console.log('[DEBUG] Setup page - gameId from params:', gameId, 'window.location:', window.location.href);
+  
   // Check for temporary game data first
   const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
   const isTemporaryGame = tempGameData?.status === 'temp';
@@ -101,13 +103,14 @@ export default function Setup() {
     
     if (stepParam === 'wines' && gameData?.game?.totalBottles && bottlesData?.bottles) {
       console.log('[DEBUG] Loading data from query param navigation');
-      // Load configuration
+      // Load configuration - use actual bottle count from database
       const game = gameData.game;
+      const actualBottleCount = bottlesData.bottles.length || game.totalBottles;
       setSelectedPlayers(game.maxPlayers);
-      setSelectedBottles(game.totalBottles);
+      setSelectedBottles(actualBottleCount);
       setSelectedConfig({
         players: game.maxPlayers,
-        bottles: game.totalBottles,
+        bottles: actualBottleCount,
         rounds: game.totalRounds,
         bottlesPerRound: game.bottlesPerRound,
         bottleEqPerPerson: game.bottleEqPerPerson || 0,
@@ -144,11 +147,12 @@ export default function Setup() {
           bottlesCount: bottlesData.bottles.length 
         });
         
+        const actualBottleCount = bottlesData.bottles.length || game.totalBottles;
         setSelectedPlayers(game.maxPlayers);
-        setSelectedBottles(game.totalBottles);
+        setSelectedBottles(actualBottleCount);
         setSelectedConfig({
           players: game.maxPlayers,
-          bottles: game.totalBottles,
+          bottles: actualBottleCount,
           rounds: game.totalRounds,
           bottlesPerRound: game.bottlesPerRound,
           bottleEqPerPerson: game.bottleEqPerPerson || 0,
