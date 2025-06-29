@@ -128,9 +128,13 @@ export default function Rounds() {
   
   // Load wines from session storage on mount
   useEffect(() => {
+    console.log('[DEBUG] Rounds page - tempWinesJson:', tempWinesJson);
+    console.log('[DEBUG] Rounds page - gameData:', gameData);
+    
     if (tempWinesJson && gameData?.game) {
       try {
         const parsedWines = JSON.parse(tempWinesJson);
+        console.log('[DEBUG] Parsed wines:', parsedWines);
         setWines(parsedWines);
         
         // Initialize empty rounds
@@ -144,6 +148,8 @@ export default function Rounds() {
           variant: "destructive"
         });
       }
+    } else {
+      console.log('[DEBUG] No wines found - tempWinesJson:', tempWinesJson, 'gameData:', gameData);
     }
   }, [tempWinesJson, gameData, toast]);
 
