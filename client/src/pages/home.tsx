@@ -94,7 +94,7 @@ export default function Home() {
               className="bg-[#8B1A1A] hover:bg-[#7A1515] text-white font-medium px-8 py-3 text-base rounded-lg"
               disabled={createGameMutation.isPending}
             >
-              {createGameMutation.isPending ? "Creating..." : "Host a Tasting"}
+              {createGameMutation.isPending ? "Creating..." : "Host Tasting"}
             </Button>
             <Button 
               onClick={() => setLocation("/join")}
