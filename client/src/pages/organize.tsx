@@ -341,14 +341,16 @@ export default function Organize() {
   // Mutation to save bottle assignments
   const updateBottlesMutation = useMutation({
     mutationFn: async (roundData: { roundIndex: number; bottleIds: string[] }[]) => {
-      const result = await apiRequest(`/api/games/${gameId}/bottles/organize`, {
-        method: "POST",
-        body: JSON.stringify({ rounds: roundData }),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${hostToken}`
+      const result = await apiRequest(
+        "POST",
+        `/api/games/${gameId}/bottles/organize`,
+        { rounds: roundData },
+        {
+          headers: {
+            "Authorization": `Bearer ${hostToken}`
+          }
         }
-      });
+      );
       return result;
     },
     onSuccess: () => {
@@ -379,7 +381,7 @@ export default function Organize() {
         }));
         
         // Silent save (no toast notifications for auto-save)
-        apiRequest(`/api/games/${gameData.game.id}/bottles/organize`, {
+        fetch(`/api/games/${gameData.game.id}/bottles/organize`, {
           method: "POST",
           body: JSON.stringify({ rounds: roundData }),
           headers: {
@@ -467,12 +469,16 @@ export default function Organize() {
 
   const handleStartGame = async () => {
     try {
-      await apiRequest(`/api/games/${gameId}/start`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${hostToken}`
+      await apiRequest(
+        "POST",
+        `/api/games/${gameId}/start`,
+        undefined,
+        {
+          headers: {
+            "Authorization": `Bearer ${hostToken}`
+          }
         }
-      });
+      );
       
       queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
       toast({
