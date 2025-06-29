@@ -638,12 +638,12 @@ export default function Setup() {
             <Wine className="h-5 w-5" />
             <CardTitle>Wine List</CardTitle>
           </div>
-          {selectedConfig && (
+          {gameData?.game && (
             <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary">{selectedConfig.players} players</Badge>
-              <Badge variant="secondary">{selectedConfig.bottles} bottles</Badge>
-              <Badge variant="secondary">{selectedConfig.rounds} rounds</Badge>
-              <Badge variant="secondary">{selectedConfig.ozPerPersonPerBottle ? (selectedConfig.ozPerPersonPerBottle / 100).toFixed(2) : '0.00'} oz pours</Badge>
+              <Badge variant="secondary">{gameData.game.maxPlayers} players</Badge>
+              <Badge variant="secondary">{gameData.game.totalBottles} bottles</Badge>
+              <Badge variant="secondary">{gameData.game.totalRounds} rounds</Badge>
+              <Badge variant="secondary">{gameData.game.ozPerPersonPerBottle ? (gameData.game.ozPerPersonPerBottle / 100).toFixed(2) : '0.00'} oz pours</Badge>
             </div>
           )}
         </CardHeader>
