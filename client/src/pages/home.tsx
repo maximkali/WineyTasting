@@ -81,7 +81,7 @@ export default function Home() {
               <Button
                 onClick={handleCreateGame}
                 disabled={createGameMutation.isPending || hostName.trim().length < 3}
-                className="w-full wine-gradient text-white py-3 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
+                className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
                 {createGameMutation.isPending ? "Creating..." : "🍷 Let's Get Started!"}
               </Button>
