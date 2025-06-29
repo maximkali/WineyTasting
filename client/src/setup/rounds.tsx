@@ -35,8 +35,8 @@ function WineTile({ wine, index, onRemove }: WineTileProps) {
           {String.fromCharCode(65 + index)}
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">{wine.funName || wine.labelName}</p>
-          <p className="text-xs text-gray-500">{wine.labelName}</p>
+          <p className="text-sm font-medium text-gray-900">{wine.labelName}</p>
+          {wine.funName && <p className="text-xs text-gray-500">"{wine.funName}"</p>}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -195,16 +195,30 @@ export default function Rounds() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Get host token from session storage
-  const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
-  
   // Game data
   const { data: gameData, isLoading: gameLoading, isError: gameError } = useGame(gameId!);
+  
+  // Get host token from session storage with fallback
+  const hostToken = gameId ? (
+    sessionStorage.getItem(`game-${gameId}-hostToken`) || 
+    sessionStorage.getItem("hostToken")
+  ) : null;
+  
+  // Use gameData hostToken as fallback if session storage doesn't have it
+  const finalHostToken = hostToken || gameData?.game?.hostToken;
+  
+  console.log('[DEBUG] Host token check:', {
+    gameId,
+    fromSessionSpecific: gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null,
+    fromSessionGeneral: sessionStorage.getItem("hostToken"),
+    fromGameData: gameData?.game?.hostToken,
+    finalToken: finalHostToken?.substring(0, 10) + '...'
+  });
   
   // Bottles data - read directly from database
   const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
     queryKey: [`/api/games/${gameId}/bottles`],
-    enabled: !!gameId && !!hostToken,
+    enabled: !!gameId && !!finalHostToken,
   });
   
   // State for wines and rounds
@@ -246,10 +260,13 @@ export default function Rounds() {
       }));
       
       console.log('[DEBUG] Saving rounds data:', roundData);
+      console.log('[DEBUG] Using hostToken:', finalHostToken?.substring(0, 10) + '...');
       
       // Organize rounds with bottle IDs
       const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData }, {
-        'Authorization': `Bearer ${hostToken}`
+        headers: {
+          'Authorization': `Bearer ${finalHostToken}`
+        }
       });
       
       if (!organizeResponse.ok) {
@@ -479,9 +496,9 @@ export default function Rounds() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {wine.funName || wine.labelName}
+                        {wine.labelName}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">{wine.labelName}</p>
+                      {wine.funName && <p className="text-xs text-gray-500 truncate">"{wine.funName}"</p>}
                     </div>
                     <span className="text-sm font-semibold text-gray-900">{formatPrice(wine.price)}</span>
                   </div>
