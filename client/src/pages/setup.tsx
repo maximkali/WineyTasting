@@ -439,7 +439,7 @@ export default function Setup() {
             {bottles.map((bottle, index) => (
               <div key={index} className="flex gap-3 items-center p-4 border rounded-lg">
                 <div className="flex-shrink-0 w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  {index + 1}
+                  {String.fromCharCode(65 + index)}
                 </div>
                 <div className="flex-1">
                   <Label htmlFor={`label-${index}`}>Wine Name</Label>
