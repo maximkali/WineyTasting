@@ -264,14 +264,14 @@ export default function Setup() {
     );
   }
 
-  // Handle missing host token
-  if (!hostToken) {
+  // Handle missing host token for existing games only
+  if (!isNewGame && !hostToken) {
     setLocation("/");
     return null;
   }
 
-  // Handle real games - check for game data and status
-  if (!isTemporaryGame) {
+  // Handle real games - check for game data and status (but only for existing games, not new ones)
+  if (!isTemporaryGame && !isNewGame) {
     if (!gameData?.game) {
       setLocation("/");
       return null;
