@@ -21,8 +21,6 @@ export default function Home() {
       return res.json();
     },
     onSuccess: (data) => {
-      // Store host token for authentication
-      sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
       setLocation(`/setup/${data.game.id}`);
     },
     onError: (error) => {
