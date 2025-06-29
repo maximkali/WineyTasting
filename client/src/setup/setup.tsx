@@ -209,10 +209,10 @@ export default function Setup() {
       queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
       toast({
         title: "Success",
-        description: "Wines saved successfully! Continuing to wine list.",
+        description: "Wines saved successfully! Now organize them into rounds.",
       });
-      // Navigate to Wine List page first, where wines will be loaded into session storage
-      setLocation(`/wine-list/${gameId}`);
+      // Navigate directly to rounds - rounds will read from database
+      setLocation(`/rounds/${gameId}`);
     },
     onError: (error) => {
       toast({

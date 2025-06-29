@@ -114,83 +114,60 @@ export default function Rounds() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Get host token and temporary wines from session storage
+  // Get host token from session storage
   const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
-  const tempWinesJson = gameId ? sessionStorage.getItem(`game-${gameId}-tempWines`) : null;
   
   // Game data
-  const { data: gameData, isLoading, isError } = useGame(gameId!);
+  const { data: gameData, isLoading: gameLoading, isError: gameError } = useGame(gameId!);
   
-  // Parse temporary wines
+  // Bottles data - read directly from database
+  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+    queryKey: ['/api/games', gameId, 'bottles'],
+    enabled: !!gameId && !!hostToken,
+  });
+  
+  // State for wines and rounds
   const [wines, setWines] = useState<Wine[]>([]);
   const [rounds, setRounds] = useState<Wine[][]>([]);
   const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
   
-  // Load wines from session storage on mount
+  // Load wines from database on mount
   useEffect(() => {
-    console.log('[DEBUG] Rounds page - tempWinesJson:', tempWinesJson);
-    console.log('[DEBUG] Rounds page - gameData:', gameData);
-    
-    if (tempWinesJson && gameData?.game) {
-      try {
-        const parsedWines = JSON.parse(tempWinesJson);
-        console.log('[DEBUG] Parsed wines:', parsedWines);
-        setWines(parsedWines);
-        
-        // Initialize empty rounds
-        const totalRounds = gameData.game.totalRounds || 5;
-        setRounds(Array(totalRounds).fill(null).map(() => []));
-      } catch (error) {
-        console.error('Error parsing temporary wines:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load wines. Please go back to Wine List.",
-          variant: "destructive"
-        });
-      }
-    } else {
-      console.log('[DEBUG] No wines found - tempWinesJson:', tempWinesJson, 'gameData:', gameData);
+    if (bottlesData?.bottles && gameData?.game) {
+      const wineData = bottlesData.bottles.map((bottle: any, index: number) => ({
+        id: bottle.id,
+        labelName: bottle.labelName,
+        funName: bottle.funName,
+        price: bottle.price / 100, // Convert from cents
+        originalIndex: index
+      }));
+      console.log('[DEBUG] Rounds page - Loading bottles from DB:', wineData);
+      setWines(wineData);
+      
+      // Initialize empty rounds
+      const totalRounds = gameData.game.totalRounds || 5;
+      setRounds(Array(totalRounds).fill(null).map(() => []));
     }
-  }, [tempWinesJson, gameData, toast]);
+  }, [bottlesData, gameData]);
 
   // Get unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
   const unassignedWines = wines.filter(w => !assignedWineIds.has(w.id));
 
-  // Save wines and rounds mutation
-  const saveWinesAndRoundsMutation = useMutation({
+  // Save rounds mutation - wines are already in database
+  const saveRoundsMutation = useMutation({
     mutationFn: async () => {
       if (!gameId || !hostToken) throw new Error('Missing game ID or host token');
       
-      // First save wines
-      const winesData = wines.map((wine, index) => ({
-        labelName: wine.labelName,
-        funName: wine.funName || undefined,
-        price: Math.round(wine.price * 100) // Convert to cents
-      }));
-      
-      const winesResponse = await apiRequest('POST', `/api/games/${gameId}/bottles`, winesData, {
-        'Authorization': `Bearer ${hostToken}`
-      });
-      
-      if (!winesResponse.ok) {
-        throw new Error('Failed to save wines');
-      }
-      
-      const savedBottles = await winesResponse.json();
-      
-      // Map saved bottle IDs to round assignments
+      // Map round assignments using existing bottle IDs
       const roundData = rounds.map((roundWines, roundIndex) => ({
         roundIndex,
-        bottleIds: roundWines.map(wine => {
-          const savedBottle = savedBottles.bottles.find((b: any) => 
-            b.labelName === wine.labelName && b.funName === wine.funName
-          );
-          return savedBottle?.id;
-        }).filter(Boolean)
+        bottleIds: roundWines.map(wine => wine.id)
       }));
       
-      // Then organize rounds with real IDs
+      console.log('[DEBUG] Saving rounds data:', roundData);
+      
+      // Organize rounds with bottle IDs
       const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData }, {
         'Authorization': `Bearer ${hostToken}`
       });
@@ -326,14 +303,14 @@ export default function Rounds() {
       return;
     }
     
-    // Save wines and rounds
-    await saveWinesAndRoundsMutation.mutateAsync();
+    // Save rounds
+    await saveRoundsMutation.mutateAsync();
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error loading game data</div>;
+  if (gameLoading || bottlesLoading) return <div>Loading...</div>;
+  if (gameError) return <div>Error loading game data</div>;
   if (!gameData) return <div>Game not found</div>;
-  if (!tempWinesJson) {
+  if (!bottlesData || bottlesData.bottles.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <WineyHeader />

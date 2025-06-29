@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/common/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Input } from "@/common/ui/input";
@@ -100,6 +100,46 @@ export default function WineList() {
     setWines(wines.filter(w => w.id !== id));
   };
 
+  // Mutation to save wines to database
+  const saveWinesMutation = useMutation({
+    mutationFn: async () => {
+      if (!gameId || !hostToken) throw new Error('Missing game ID or host token');
+      
+      const winesData = wines.map(wine => ({
+        labelName: wine.labelName,
+        funName: wine.funName || null,
+        price: Math.round(wine.price * 100) // Convert to cents
+      }));
+      
+      // Use PUT to update existing bottles
+      const response = await apiRequest('PUT', `/api/games/${gameId}/bottles`, {
+        bottles: winesData
+      }, {
+        headers: { Authorization: `Bearer ${hostToken}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save wines');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Wine lineup locked! Proceeding to rounds.",
+      });
+      navigate(`/rounds/${gameId}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save wines",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleNext = () => {
     console.log('[DEBUG] handleNext - wines:', wines);
     console.log('[DEBUG] handleNext - game.totalBottles:', game.totalBottles);
@@ -122,10 +162,8 @@ export default function WineList() {
       return;
     }
 
-    // Store wines in session storage and navigate
-    console.log('[DEBUG] Storing wines in session storage:', wines);
-    sessionStorage.setItem(`game-${gameId}-tempWines`, JSON.stringify(wines));
-    navigate(`/rounds/${gameId}`);
+    // Save wines to database
+    saveWinesMutation.mutate();
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -236,10 +274,10 @@ export default function WineList() {
         <div className="flex justify-end">
           <Button
             onClick={handleNext}
-            disabled={wines.length === 0}
+            disabled={wines.length === 0 || wines.length !== game.totalBottles}
             className="flex items-center gap-2"
           >
-            Continue to Rounds
+            Lock the Lineup
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
