@@ -29,19 +29,13 @@ export default function Setup() {
   // Check if this is a new game flow (no gameId) or existing game
   const isNewGame = !gameId;
   
-  // Check for temporary game data first
-  const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
-  const isTemporaryGame = tempGameData?.status === 'temp';
+  // Simple host token retrieval
+  const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
   
-  // Use different tokens for temp vs real games
-  const hostToken = isTemporaryGame 
-    ? tempGameData?.hostToken 
-    : sessionStorage.getItem(`game-${gameId}-hostToken`);
-  
-  // Only fetch from API if it's not a temporary game AND not a new game
+  // Only fetch from API if not a new game
   const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
     queryKey: [`/api/games/${gameId}`],
-    enabled: !isTemporaryGame && !isNewGame && !!gameId && !!hostToken,
+    enabled: !isNewGame && !!gameId && !!hostToken,
     refetchInterval: 5000,
   });
 
@@ -253,7 +247,7 @@ export default function Setup() {
 
   // Show loading while game data is being fetched
   // Handle loading for real games only
-  if (!isTemporaryGame && (gameLoading || bottlesLoading)) {
+  if (gameLoading || bottlesLoading) {
     return (
       <div className="container max-w-2xl mx-auto p-6 flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -271,7 +265,7 @@ export default function Setup() {
   }
 
   // Handle real games - check for game data and status (but only for existing games, not new ones)
-  if (!isTemporaryGame && !isNewGame) {
+  if (!isNewGame) {
     if (!gameData?.game) {
       setLocation("/");
       return null;

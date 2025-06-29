@@ -228,15 +228,9 @@ export default function Organize() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Check for temporary game data first (consistent with setup page)
-  const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
-  const isTemporaryGame = tempGameData?.status === 'temp';
-  
-  // Use different tokens for temp vs real games (consistent with setup page)
-  const hostToken = isTemporaryGame 
-    ? tempGameData?.hostToken 
-    : sessionStorage.getItem(`game-${gameId}-hostToken`);
-  console.log('[DEBUG] Organize page - gameId:', gameId, 'isTemporaryGame:', isTemporaryGame, 'hostToken:', hostToken?.substring(0, 10) + '...');
+  // Simple host token retrieval
+  const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
+  console.log('[DEBUG] Organize page - gameId:', gameId, 'hostToken:', hostToken?.substring(0, 10) + '...');
 
   // Game data using the hook
   const { data: gameData, isLoading, isError } = useGame(gameId!);
