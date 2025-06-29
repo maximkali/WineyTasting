@@ -26,7 +26,7 @@ export default function Setup() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  console.log('[DEBUG] Setup page - gameId from params:', gameId, 'window.location:', window.location.href);
+
   
   // Check for temporary game data first
   const tempGameData = gameId ? JSON.parse(sessionStorage.getItem(`tempGame_${gameId}`) || 'null') : null;
@@ -84,68 +84,51 @@ export default function Setup() {
   }, [selectedPlayers, selectedBottles]);
 
   useEffect(() => {
-    if (selectedConfig) {
-      // Initialize wine bottles array based on selected configuration
+    if (selectedConfig && bottlesData?.bottles) {
+      // Sync bottles state with database data
+      const existingBottles = bottlesData.bottles.map((b: any) => ({
+        labelName: b.labelName,
+        funName: b.funName,
+        price: (b.price / 100).toFixed(2) // Convert cents to dollars
+      }));
+      
+      // If we need more bottles than we have, append empty ones
+      const totalNeeded = selectedConfig.bottles;
+      const currentCount = existingBottles.length;
+      
+      if (currentCount < totalNeeded) {
+        const emptyBottles = Array.from({ length: totalNeeded - currentCount }, () => ({
+          labelName: "",
+          funName: "",
+          price: ""
+        }));
+        setBottles([...existingBottles, ...emptyBottles]);
+      } else {
+        // If we have more or equal bottles, just use what we have
+        setBottles(existingBottles);
+      }
+      
+      console.log('[DEBUG] Synced bottles state:', existingBottles.length, 'existing +', totalNeeded - currentCount, 'new');
+    } else if (selectedConfig && !bottlesData?.bottles) {
+      // No existing bottles, create all new
       setBottles(Array.from({ length: selectedConfig.bottles }, () => ({
         labelName: "",
         funName: "",
         price: ""
       })));
     }
-  }, [selectedConfig]);
+  }, [selectedConfig, bottlesData]);
 
-  // Check for step query parameter
+  // Single effect to handle both loading data and query param navigation
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const stepParam = urlParams.get('step');
-    
-    console.log('[DEBUG] Query param check - stepParam:', stepParam, 'gameData:', gameData, 'bottlesData:', bottlesData);
-    
-    if (stepParam === 'wines' && gameData?.game?.totalBottles && bottlesData?.bottles) {
-      console.log('[DEBUG] Loading data from query param navigation');
-      // Load configuration - use actual bottle count from database
-      const game = gameData.game;
-      const actualBottleCount = bottlesData.bottles.length || game.totalBottles;
-      setSelectedPlayers(game.maxPlayers);
-      setSelectedBottles(actualBottleCount);
-      setSelectedConfig({
-        players: game.maxPlayers,
-        bottles: actualBottleCount,
-        rounds: game.totalRounds,
-        bottlesPerRound: game.bottlesPerRound,
-        bottleEqPerPerson: game.bottleEqPerPerson || 0,
-        ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
-      });
-      
-      // Load bottles
-      if (bottlesData.bottles.length > 0) {
-        console.log('[DEBUG] Loading bottles from query param:', bottlesData.bottles.length);
-        const existingBottles = bottlesData.bottles.map((bottle: any) => ({
-          labelName: bottle.labelName || "",
-          funName: bottle.funName || "",
-          price: (bottle.price / 100).toString()
-        }));
-        setBottles(existingBottles);
-      }
-      
-      setConfigurationStep('wines');
-    }
-  }, [location, gameData, bottlesData]);
 
-  // Effect to load existing bottles and configuration
-  useEffect(() => {
-    console.log('[DEBUG] Setup page loading - gameData:', gameData, 'bottlesData:', bottlesData);
     
     if (gameData?.game && bottlesData?.bottles) {
       const game = gameData.game;
       
       // Set configuration from game data
       if (game.totalBottles && game.maxPlayers && game.totalRounds && game.bottlesPerRound) {
-        console.log('[DEBUG] Loading game config:', { 
-          players: game.maxPlayers, 
-          bottles: game.totalBottles,
-          bottlesCount: bottlesData.bottles.length 
-        });
+
         
         const actualBottleCount = bottlesData.bottles.length || game.totalBottles;
         setSelectedPlayers(game.maxPlayers);
@@ -161,19 +144,26 @@ export default function Setup() {
         
         // Load existing bottles data
         if (bottlesData.bottles.length > 0) {
-          console.log('[DEBUG] Loading existing bottles:', bottlesData.bottles.length);
+
           const existingBottles = bottlesData.bottles.map((bottle: any) => ({
             labelName: bottle.labelName || "",
             funName: bottle.funName || "",
             price: (bottle.price / 100).toString() // Convert from cents back to dollars
           }));
           setBottles(existingBottles);
-          // Always show wine entry form when bottles exist
+        }
+        
+        // Check query param to determine which step to show
+        const urlParams = new URLSearchParams(window.location.search);
+        const stepParam = urlParams.get('step');
+        
+        if (stepParam === 'wines' || bottlesData.bottles.length > 0) {
+
           setConfigurationStep('wines');
         }
       }
     }
-  }, [gameData, bottlesData]);
+  }, [gameData, bottlesData, location]);
 
   // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
@@ -424,6 +414,8 @@ export default function Setup() {
     // Don't clear the data when going back - preserve existing entries
   };
 
+
+  
   if (configurationStep === 'config') {
     return (
       <div className="min-h-screen bg-gray-50">
