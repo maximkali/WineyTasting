@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Setup from "@/pages/setup";
+import SetupSimple from "@/pages/setup-simple";
 import Organize from "@/pages/organize";
 import Join from "@/pages/join";
 import Lobby from "@/pages/lobby";
@@ -14,6 +15,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/setup-simple" component={SetupSimple} />
       <Route path="/setup" component={Setup} />
       <Route path="/setup/:gameId" component={Setup} />
       <Route path="/organize/:gameId" component={Organize} />

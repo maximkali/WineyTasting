@@ -20,6 +20,13 @@ import {
   type GameSetupOption 
 } from "@shared/game-setups";
 
+interface GameData {
+  game: any;
+  players: any[];
+  bottles: any[];
+  rounds: any[];
+}
+
 export default function Setup() {
   const { gameId } = useParams();
   const [location, setLocation] = useLocation();
@@ -41,7 +48,7 @@ export default function Setup() {
     : sessionStorage.getItem(`game-${gameId}-hostToken`);
   
   // Only fetch from API if it's not a temporary game
-  const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
+  const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery<GameData>({
     queryKey: [`/api/games/${gameId}`],
     enabled: !isTemporaryGame && !!gameId && !!hostToken,
     refetchInterval: 5000,
@@ -50,7 +57,7 @@ export default function Setup() {
   // Fetch existing bottles for the game
   const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
     queryKey: [`/api/games/${gameId}/bottles`],
-    enabled: !!gameId && !!hostToken && !!gameData?.game,
+    enabled: !!gameId && !!hostToken && !!gameData,
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/games/${gameId}/bottles`, undefined, {
         headers: { Authorization: `Bearer ${hostToken}` },
@@ -147,7 +154,7 @@ export default function Setup() {
       return;
     }
     
-    if (gameData?.game && bottlesData?.bottles) {
+    if (gameData && bottlesData?.bottles) {
       const game = gameData.game;
       
       // Set configuration from game data
@@ -336,7 +343,7 @@ export default function Setup() {
 
   // Handle real games - check for game data and status
   if (!isTemporaryGame) {
-    if (!gameData?.game) {
+    if (!gameData) {
       setLocation("/");
       return null;
     }
@@ -790,7 +797,7 @@ export default function Setup() {
   }
 
   // Wine entry step
-  const canRandomize = selectedConfig && gameData.bottleCount === selectedConfig.bottles;
+  const canRandomize = selectedConfig && bottles.length === selectedConfig.bottles;
 
   return (
     <div className="min-h-screen bg-gray-50">
