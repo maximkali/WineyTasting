@@ -26,6 +26,9 @@ export default function Setup() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
+  // Host name form state for initial game creation
+  const [hostName, setHostName] = useState("");
+  const [isCreatingGame, setIsCreatingGame] = useState(false);
 
   
   // Check for temporary game data first
@@ -186,6 +189,30 @@ export default function Setup() {
   }, [gameData, bottlesData, location, gameId, hostToken, queryClient]);
 
   // All hooks must be declared before any conditional returns
+  const createGameMutation = useMutation({
+    mutationFn: async (hostName: string) => {
+      const res = await apiRequest("POST", "/api/games", { hostName });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Store the host token
+      sessionStorage.setItem(`game-${data.game.id}-hostToken`, data.hostToken);
+      // Navigate to setup with the new game ID
+      setLocation(`/setup/${data.game.id}`);
+      toast({
+        title: "Game Created",
+        description: "Your wine tasting game has been created!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const saveConfigMutation = useMutation({
     mutationFn: async (config: GameSetupOption) => {
       const configData = {
@@ -443,6 +470,67 @@ export default function Setup() {
 
 
   
+  // Show host name form if no gameId (initial setup flow)
+  if (!gameId) {
+    const handleCreateGame = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (hostName.trim()) {
+        createGameMutation.mutate(hostName.trim());
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <WineyHeader />
+        <div className="container max-w-md mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
+          
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Let's Get Started!</h1>
+            <p className="text-muted-foreground">Enter your name to create a new wine tasting game.</p>
+          </div>
+
+          <Card>
+            <CardContent className="pt-6">
+              <form onSubmit={handleCreateGame} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hostName">Host Name</Label>
+                  <Input
+                    id="hostName"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={hostName}
+                    onChange={(e) => setHostName(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  size="lg"
+                  disabled={!hostName.trim() || createGameMutation.isPending}
+                >
+                  {createGameMutation.isPending ? "Creating Game..." : "Create Game"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (configurationStep === 'config') {
     return (
       <div className="min-h-screen bg-gray-50">
