@@ -178,7 +178,7 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
             {wines.length}/{bottlesPerRound}
           </Badge>
           <span className="text-sm font-normal text-gray-600">
-            Sum: ${totalCost.toFixed(2)}
+            Sum: ${Math.round(totalCost)}
           </span>
         </CardTitle>
       </CardHeader>
