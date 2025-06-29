@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DragEndEvent, DndContext, closestCorners, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Wine, Settings, GripVertical } from "lucide-react";
@@ -39,26 +39,27 @@ function SortableWine({ wine, index }: SortableWineProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-2 p-3 bg-white border rounded-lg touch-manipulation min-h-[100px] w-full ${
-        isDragging ? "shadow-lg" : ""
+      className={`flex flex-col gap-3 p-4 bg-white border rounded-lg touch-manipulation min-h-[120px] w-full shadow-sm hover:shadow-md transition-shadow ${
+        isDragging ? "shadow-lg opacity-50" : ""
       }`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col"
+        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col gap-2"
       >
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
             {String.fromCharCode(65 + index)}
           </div>
-          <div className="text-xs font-medium">${wine.price}</div>
+          <div className="text-sm font-semibold text-green-700">${wine.price}</div>
+          <GripVertical className="h-4 w-4 text-gray-400 ml-auto" />
         </div>
-        <div className="text-sm font-medium text-gray-900 leading-tight mb-1 line-clamp-2">
+        <div className="text-sm font-medium text-gray-900 leading-relaxed">
           {wine.labelName}
         </div>
         {wine.funName && (
-          <div className="text-xs text-gray-600 leading-tight line-clamp-2">
+          <div className="text-xs text-gray-600 leading-relaxed">
             {wine.funName}
           </div>
         )}
@@ -87,7 +88,7 @@ function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
       </CardHeader>
       <CardContent>
         <div className="min-h-[200px] md:min-h-[250px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
@@ -104,14 +105,22 @@ function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
 }
 
 export default function Organize() {
-  const { gameId } = useParams<{ gameId: string }>();
-  const [, setLocation] = useLocation();
+  const { gameId } = useParams();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: gameData, isLoading } = useGame(gameId!);
-  const [rounds, setRounds] = useState<any[][]>([]);
-  const [unassignedWines, setUnassignedWines] = useState<any[]>([]);
+  const hostToken = localStorage.getItem(`hostToken_${gameId}`);
+  
+  useEffect(() => {
+    if (!hostToken) {
+      navigate("/");
+    }
+  }, [hostToken, navigate]);
+
+  if (!hostToken) {
+    return null;
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -121,62 +130,68 @@ export default function Organize() {
     })
   );
 
-  // Get host token from localStorage
-  const hostToken = typeof window !== 'undefined' ? localStorage.getItem('hostToken') : null;
+  // Fetch game data using the hook
+  const { data: gameData, isLoading, error } = useGame(gameId!);
 
-  // Initialize rounds and wines when data loads
+  // Fetch bottles
+  const { data: bottlesData } = useQuery({
+    queryKey: ["/api/bottles", gameId],
+    enabled: !!gameId,
+  });
+
+  const [rounds, setRounds] = useState<any[][]>([]);
+  const [unassignedWines, setUnassignedWines] = useState<any[]>([]);
+
+  // Initialize rounds when game data is available
   useEffect(() => {
-    if (gameData?.bottles && gameData?.game) {
+    if (gameData?.game && bottlesData?.bottles) {
       const totalRounds = gameData.game.totalRounds || 4;
-      const newRounds = Array.from({ length: totalRounds }, () => []);
-      setRounds(newRounds);
-      setUnassignedWines([...gameData.bottles]);
+      const bottlesPerRound = gameData.game.bottlesPerRound || 4;
+      
+      // Initialize empty rounds
+      const emptyRounds = Array(totalRounds).fill(null).map(() => []);
+      setRounds(emptyRounds);
+      
+      // Set all bottles as unassigned initially
+      setUnassignedWines([...bottlesData.bottles]);
     }
-  }, [gameData]);
+  }, [gameData, bottlesData]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const wineId = active.id as string;
     const wine = [...unassignedWines, ...rounds.flat()].find(w => w.id === wineId);
-    
     if (!wine) return;
 
-    // Parse the drop target
-    const overIdStr = over.id as string;
-    
-    if (overIdStr.startsWith("round-")) {
-      const roundIndex = parseInt(overIdStr.split("-")[1]);
+    // Remove wine from current location
+    const newUnassignedWines = unassignedWines.filter(w => w.id !== wineId);
+    const newRounds = rounds.map(round => round.filter(w => w.id !== wineId));
+
+    // Determine destination
+    if (over.id === "unassigned") {
+      // Moving to unassigned
+      setUnassignedWines([...newUnassignedWines, wine]);
+      setRounds(newRounds);
+    } else if (over.id.toString().startsWith("round-")) {
+      // Moving to a round
+      const roundIndex = parseInt(over.id.toString().replace("round-", ""));
       const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
       
-      if (rounds[roundIndex].length >= bottlesPerRound) {
+      if (newRounds[roundIndex].length < bottlesPerRound) {
+        newRounds[roundIndex] = [...newRounds[roundIndex], wine];
+        setUnassignedWines(newUnassignedWines);
+        setRounds(newRounds);
+      } else {
+        // Round is full, show toast
         toast({
           title: "Round Full",
           description: `Round ${roundIndex + 1} already has ${bottlesPerRound} wines.`,
           variant: "destructive",
         });
-        return;
       }
-
-      // Remove wine from current location
-      const newUnassigned = unassignedWines.filter(w => w.id !== wineId);
-      const newRounds = rounds.map((round, index) => 
-        index === roundIndex 
-          ? [...round.filter(w => w.id !== wineId), wine]
-          : round.filter(w => w.id !== wineId)
-      );
-
-      setUnassignedWines(newUnassigned);
-      setRounds(newRounds);
-    } else if (overIdStr === "unassigned") {
-      // Move back to unassigned
-      const newUnassigned = [...unassignedWines.filter(w => w.id !== wineId), wine];
-      const newRounds = rounds.map(round => round.filter(w => w.id !== wineId));
-      
-      setUnassignedWines(newUnassigned);
-      setRounds(newRounds);
     }
   };
 
@@ -194,45 +209,39 @@ export default function Organize() {
         headers: { Authorization: `Bearer ${hostToken}` },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create rounds");
-      }
-
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Wine rounds have been organized. Game is ready to start!",
+        description: "Rounds finalized and game started.",
       });
+      navigate(`/lobby/${gameId}`);
       queryClient.invalidateQueries({ queryKey: ["/api/games", gameId] });
-      setLocation(`/lobby/${gameId}`);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to organize rounds. Please try again.",
+        description: error.message || "Failed to finalize rounds",
         variant: "destructive",
       });
     },
   });
 
   const handleFinalize = () => {
-    const totalWines = rounds.flat().length;
-    const expectedWines = gameData?.game?.totalBottles || 0;
-    
-    if (totalWines !== expectedWines) {
+    // Check if all wines are assigned
+    if (unassignedWines.length > 0) {
       toast({
-        title: "Incomplete Organization",
-        description: `Please assign all ${expectedWines} wines to rounds.`,
+        title: "Incomplete Setup",
+        description: `Please assign all ${unassignedWines.length} remaining wines to rounds.`,
         variant: "destructive",
       });
       return;
     }
 
+    // Check if all rounds have the correct number of bottles
     const bottlesPerRound = gameData?.game?.bottlesPerRound || 4;
     const incompleteRounds = rounds.filter(round => round.length !== bottlesPerRound);
-    
     if (incompleteRounds.length > 0) {
       toast({
         title: "Incomplete Rounds",
@@ -246,23 +255,15 @@ export default function Organize() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    );
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  if (!gameData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>Game not found</div>
-      </div>
-    );
+  if (error || !gameData?.game) {
+    return <div className="flex justify-center items-center min-h-screen">Game not found</div>;
   }
 
-  const totalRounds = gameData.game?.totalRounds || 4;
-  const bottlesPerRound = gameData.game?.bottlesPerRound || 4;
+  const totalRounds = gameData.game.totalRounds || 4;
+  const bottlesPerRound = gameData.game.bottlesPerRound || 4;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -295,7 +296,7 @@ export default function Organize() {
               <CardContent>
                 <SortableContext 
                   items={unassignedWines.map(w => w.id)}
-                  strategy={verticalListSortingStrategy}
+                  strategy={rectSortingStrategy}
                 >
                   <div className="max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -319,7 +320,7 @@ export default function Organize() {
                 <div key={roundIndex} id={`round-${roundIndex}`}>
                   <SortableContext 
                     items={roundWines.map(w => w.id)}
-                    strategy={verticalListSortingStrategy}
+                    strategy={rectSortingStrategy}
                   >
                     <RoundCard
                       round={roundIndex}
