@@ -105,7 +105,7 @@ export default function Home() {
                 disabled={createGameMutation.isPending || !firstName.trim() || !lastName.trim()}
                 className="w-full wine-gradient text-white py-4 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
-                {createGameMutation.isPending ? "Creating..." : "🍷 Let's Get Started!"}
+                {createGameMutation.isPending ? "Creating..." : "Let's Get Started!"}
               </Button>
             </div>
 
