@@ -237,109 +237,141 @@ export default function Setup() {
 
   if (configurationStep === 'config') {
     return (
-      <div className="container max-w-4xl mx-auto p-6 space-y-6">
+      <div className="container max-w-2xl mx-auto p-6 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">Let's set up your tasting adventure!</h1>
+          <p className="text-muted-foreground">
+            Complete the basic settings below to get started. Then, add each wine's details - we'll need the label name, 
+            a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.
+          </p>
+        </div>
+
         <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              <CardTitle>Game Configuration</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Players Dropdown */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Players
-                </Label>
-                <Select value={selectedPlayers?.toString()} onValueChange={(value) => {
-                  setSelectedPlayers(parseInt(value));
-                  setSelectedBottles(null);
-                  setSelectedConfig(null);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select player count" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {playerOptions.map(count => (
-                      <SelectItem key={count} value={count.toString()}>
-                        {count} players
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Bottles Dropdown */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Wine className="h-4 w-4" />
-                  Bottles
-                </Label>
-                <Select 
-                  value={selectedBottles?.toString()} 
-                  onValueChange={(value) => {
-                    setSelectedBottles(parseInt(value));
-                  }}
-                  disabled={!selectedPlayers}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bottle count" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bottleOptions.map(option => (
-                      <SelectItem key={option.bottles} value={option.bottles.toString()}>
-                        {option.bottles} bottles
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Rounds Display */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Rounds
-                </Label>
-                <div className="h-10 px-3 py-2 border rounded-md bg-muted flex items-center">
-                  {selectedConfig ? `${selectedConfig.rounds} rounds` : "Auto-calculated"}
-                </div>
-              </div>
+          <CardContent className="pt-6 space-y-6">
+            {/* Players Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium uppercase text-muted-foreground">
+                Number of Players:
+              </Label>
+              <Select value={selectedPlayers?.toString()} onValueChange={(value) => {
+                setSelectedPlayers(parseInt(value));
+                setSelectedBottles(null);
+                setSelectedConfig(null);
+              }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select players" />
+                </SelectTrigger>
+                <SelectContent>
+                  {playerOptions.map(count => (
+                    <SelectItem key={count} value={count.toString()}>
+                      {count}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Configuration Details */}
+            {/* Bottles Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium uppercase text-muted-foreground">
+                Number of Bottles:
+              </Label>
+              <Select 
+                value={selectedBottles?.toString()} 
+                onValueChange={(value) => {
+                  setSelectedBottles(parseInt(value));
+                }}
+                disabled={!selectedPlayers}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select bottles" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bottleOptions.map(option => (
+                    <SelectItem key={option.bottles} value={option.bottles.toString()}>
+                      {option.bottles}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Rounds Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium uppercase text-muted-foreground">
+                Number of Rounds:
+              </Label>
+              <Select 
+                value={selectedConfig?.rounds.toString()} 
+                onValueChange={(value) => {
+                  const rounds = parseInt(value);
+                  const options = getRoundOptions(selectedPlayers!, selectedBottles!);
+                  const matchingConfig = options.find(opt => opt.rounds === rounds);
+                  if (matchingConfig) {
+                    setSelectedConfig(matchingConfig);
+                  }
+                }}
+                disabled={!selectedPlayers || !selectedBottles}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select rounds" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roundOptions.map(option => (
+                    <SelectItem key={option.rounds} value={option.rounds.toString()}>
+                      {option.rounds}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tasting Details */}
             {selectedConfig && (
-              <div className="space-y-4">
-                <Separator />
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Badge variant="outline" className="p-3 justify-center">
-                    <div className="text-center">
-                      <div className="font-semibold">{selectedConfig.bottlesPerRound}</div>
-                      <div className="text-xs text-muted-foreground">bottles per round</div>
+              <div className="space-y-4 pt-4 border-t">
+                <h2 className="text-lg font-semibold">Tasting Details</h2>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
+                      Tastings per Round:
                     </div>
-                  </Badge>
-                  <Badge variant="outline" className="p-3 justify-center">
-                    <div className="text-center">
-                      <div className="font-semibold">{selectedConfig.bottleEqPerPerson.toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground">bottle equivalent per person</div>
+                    <div className="text-2xl font-bold">{selectedConfig.bottlesPerRound}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
+                      Pour per Tasting:
                     </div>
-                  </Badge>
-                  <Badge variant="outline" className="p-3 justify-center">
-                    <div className="text-center">
-                      <div className="font-semibold">{selectedConfig.ozPerPersonPerBottle.toFixed(1)} oz</div>
-                      <div className="text-xs text-muted-foreground">per person per bottle</div>
-                    </div>
-                  </Badge>
+                    <div className="text-2xl font-bold">{selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
+                    Total Wine per Person:
+                  </div>
+                  <div className="text-lg">
+                    {(selectedConfig.bottleEqPerPerson * 25.36).toFixed(2)} oz ({(selectedConfig.bottleEqPerPerson * 100).toFixed(0)}% of 750ml bottle)
+                  </div>
+                </div>
+
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="text-sm leading-relaxed">
+                    In this tasting, you'll sample {selectedConfig.bottlesPerRound} different wines in each of {selectedConfig.rounds} rounds. 
+                    For each wine, pour yourself {selectedConfig.ozPerPersonPerBottle.toFixed(2)} oz. Over the course of the game, 
+                    you'll taste a total of {selectedConfig.bottles} different wines, with each participant receiving approximately {(selectedConfig.bottleEqPerPerson * 25.36).toFixed(2)} oz total 
+                    (about {(selectedConfig.bottleEqPerPerson * 100).toFixed(0)}% of a standard 750ml bottle). Take notes on each wine's aroma, 
+                    flavor, and finish to compare and discuss with other participants.
+                  </p>
                 </div>
                 
                 <Button 
                   onClick={handleConfigSave} 
                   disabled={saveConfigMutation.isPending}
                   className="w-full"
+                  size="lg"
                 >
-                  {saveConfigMutation.isPending ? "Saving..." : "Save Configuration & Continue"}
+                  {saveConfigMutation.isPending ? "Creating..." : "Create"}
                 </Button>
               </div>
             )}
