@@ -22,7 +22,7 @@ import {
 
 export default function Setup() {
   const { gameId } = useParams();
-  const [_, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
@@ -91,6 +91,16 @@ export default function Setup() {
       })));
     }
   }, [selectedConfig]);
+
+  // Check for step query parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const stepParam = urlParams.get('step');
+    
+    if (stepParam === 'wines' && gameData?.game?.totalBottles) {
+      setConfigurationStep('wines');
+    }
+  }, [location, gameData]);
 
   // Effect to load existing bottles and configuration
   useEffect(() => {

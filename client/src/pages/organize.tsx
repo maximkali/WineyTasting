@@ -530,7 +530,8 @@ export default function Organize() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                navigate(`/setup/${gameId}`);
+                // Navigate back to setup page at wine entry step
+                navigate(`/setup/${gameId}?step=wines`);
               }}
               className="flex items-center gap-2"
             >
