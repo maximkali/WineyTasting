@@ -28,26 +28,27 @@ interface WineTileProps {
 
 function WineTile({ wine, index, onRemove }: WineTileProps) {
   return (
-    <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between">
+    <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-wine-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+        <div className="w-8 h-8 bg-wine-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
           {index + 1}
         </div>
         <div>
-          <p className="font-medium text-gray-900">{wine.funName || wine.labelName}</p>
-          <p className="text-sm text-gray-500">{wine.labelName}</p>
+          <p className="font-medium text-gray-900 text-sm">{wine.funName || wine.labelName}</p>
+          <p className="text-xs text-gray-500">{wine.labelName}</p>
         </div>
       </div>
-      {onRemove && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="text-gray-400 hover:text-red-600"
-        >
-          Remove
-        </Button>
-      )}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-gray-700">${wine.price}</span>
+        {onRemove && (
+          <button
+            onClick={onRemove}
+            className="text-gray-400 hover:text-red-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -85,19 +86,28 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
 
   return (
     <Card className={wines.length === bottlesPerRound ? "border-green-500" : ""}>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
-          <span>Round {round + 1}</span>
-          <Badge variant={wines.length === bottlesPerRound ? "default" : "secondary"}>
-            {wines.length}/{bottlesPerRound}
+          <span className="text-base font-medium">Round {round + 1}</span>
+          <Badge 
+            variant={wines.length === bottlesPerRound ? "default" : "secondary"}
+            className={wines.length === bottlesPerRound 
+              ? "bg-wine-500 text-white" 
+              : "bg-gray-100 text-gray-600"
+            }
+          >
+            <span className="text-xs">{wines.length}/{bottlesPerRound}</span>
           </Badge>
         </CardTitle>
+        {wines.length === bottlesPerRound && (
+          <p className="text-sm text-green-600 mt-2">Round is full</p>
+        )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {wines.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No wines assigned yet</p>
+          <p className="text-gray-400 text-sm text-center py-8">No wines assigned yet</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {wines.map((wine, index) => (
               <WineTile
                 key={wine.id}
@@ -116,10 +126,10 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-wine-50 to-wine-100 hover:from-wine-100 hover:to-wine-200 text-wine-700 border-wine-300 hover:border-wine-400 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Wines ({remainingSlots} slots)
+                  Add Wines ({remainingSlots} slot{remainingSlots !== 1 ? 's' : ''})
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -402,9 +412,9 @@ export default function Rounds() {
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Organize Wine Rounds</h1>
-          <p className="text-gray-600">Organize your {wines.length} wines into {game.totalRounds} rounds</p>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Organize Wines into Rounds</h1>
+          <p className="text-gray-600 text-sm">Assign your {wines.length} wines to {game.totalRounds} rounds ({game.bottlesPerRound} wines per round)</p>
         </div>
 
         {/* Action buttons */}
@@ -413,15 +423,17 @@ export default function Rounds() {
             onClick={handleAutoAssign}
             disabled={unassignedWines.length === 0}
             variant="outline"
+            size="sm"
             className="flex items-center gap-2"
           >
             <Shuffle className="h-4 w-4" />
-            Auto-Assign ({unassignedWines.length} unassigned)
+            Auto-Assign
           </Button>
           <Button
             onClick={handleMixEmUp}
             disabled={rounds.flat().length === 0}
             variant="outline"
+            size="sm"
             className="flex items-center gap-2"
           >
             <Shuffle className="h-4 w-4" />
@@ -430,10 +442,11 @@ export default function Rounds() {
           <Button
             onClick={handleReset}
             variant="outline"
+            size="sm"
             className="flex items-center gap-2"
           >
             <RotateCcw className="h-4 w-4" />
-            Reset All
+            Reset
           </Button>
         </div>
 
@@ -452,22 +465,13 @@ export default function Rounds() {
           ))}
         </div>
 
-        {/* Unassigned wines */}
+        {/* Status message */}
         {unassignedWines.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Unassigned Wines ({unassignedWines.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {unassignedWines.map((wine, index) => (
-                  <div key={wine.id} className="bg-gray-100 p-2 rounded text-sm">
-                    {wine.funName || wine.labelName}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-orange-800 font-medium">
+              {unassignedWines.length} wine{unassignedWines.length !== 1 ? 's' : ''} still need to be assigned to rounds.
+            </p>
+          </div>
         )}
 
         {/* Save button */}
