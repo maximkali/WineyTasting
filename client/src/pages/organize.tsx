@@ -228,9 +228,8 @@ export default function Organize() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get host token from URL params
-  const searchParams = new URLSearchParams(window.location.search);
-  const hostToken = searchParams.get('hostToken');
+  // Get host token from session storage (consistent with setup page)
+  const hostToken = sessionStorage.getItem(`game-${gameId}-hostToken`);
 
   // Game data using the hook
   const { data: gameData, isLoading, isError } = useGame(gameId!);
@@ -529,7 +528,7 @@ export default function Organize() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Setup
+              Back to Wine List
             </Button>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">

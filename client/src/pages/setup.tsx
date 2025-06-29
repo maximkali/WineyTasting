@@ -519,14 +519,14 @@ export default function Setup() {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Settings
+          Back to Setup
         </Button>
       </div>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Wine className="h-5 w-5" />
-            <CardTitle>Wine Entry</CardTitle>
+            <CardTitle>Wine List Entry</CardTitle>
           </div>
           {selectedConfig && (
             <div className="flex gap-2 flex-wrap">
@@ -609,7 +609,7 @@ export default function Setup() {
             {canRandomize && (
               <>
                 <Button 
-                  onClick={() => setLocation(`/organize/${gameId}?hostToken=${hostToken}`)}
+                  onClick={() => setLocation(`/organize/${gameId}`)}
                   variant="outline"
                   className="flex-1"
                 >

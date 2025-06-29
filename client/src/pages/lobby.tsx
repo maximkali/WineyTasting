@@ -16,8 +16,8 @@ export default function Lobby() {
   const queryClient = useQueryClient();
   const { data: gameData, isLoading } = useGame(gameId!);
 
-  const hostToken = localStorage.getItem("hostToken");
-  const playerId = localStorage.getItem("playerId");
+  const hostToken = sessionStorage.getItem(`game-${gameId}-hostToken`);
+  const playerId = sessionStorage.getItem(`game-${gameId}-playerId`);
   const isHost = gameData?.players.find(p => p.id === playerId)?.isHost || false;
   const isSpectator = !playerId;
 
