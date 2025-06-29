@@ -199,13 +199,20 @@ export default function Setup() {
   });
 
   const addBottlesMutation = useMutation({
-    mutationFn: async (newBottlesData: any[]) => {
+    mutationFn: async (newBottlesData?: any[]) => {
+      // Use the passed data or current bottles state
+      const bottlesToSave = newBottlesData || bottles.map(bottle => ({
+        labelName: bottle.labelName.trim(),
+        funName: bottle.funName.trim() || null,
+        price: Math.round(parseFloat(bottle.price) * 100), // Convert to cents for storage
+      }));
+      
       // Check if bottles already exist in database to determine POST vs PUT
       const hasExistingBottles = bottlesData?.bottles && bottlesData.bottles.length > 0;
       const method = hasExistingBottles ? "PUT" : "POST";
       
       const res = await apiRequest(method, `/api/games/${gameId}/bottles`, {
-        bottles: newBottlesData,
+        bottles: bottlesToSave,
       }, {
         headers: { Authorization: `Bearer ${hostToken}` },
       });
@@ -403,7 +410,7 @@ export default function Setup() {
     const bottlesData = bottles.map(bottle => ({
       labelName: bottle.labelName.trim(),
       funName: bottle.funName.trim() || null,
-      price: parseFloat(bottle.price),
+      price: Math.round(parseFloat(bottle.price) * 100), // Convert to cents for storage
     }));
 
     addBottlesMutation.mutate(bottlesData);
@@ -667,7 +674,7 @@ export default function Setup() {
             {canRandomize && (
               <>
                 <Button 
-                  onClick={() => setLocation(`/organize/${gameId}`)}
+                  onClick={handleWineSubmit}
                   variant="outline"
                   className="flex-1"
                 >
