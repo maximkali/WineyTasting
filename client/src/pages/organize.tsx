@@ -135,7 +135,8 @@ export default function Organize() {
 
   // Fetch bottles
   const { data: bottlesData } = useQuery({
-    queryKey: ["/api/bottles", gameId],
+    queryKey: ["/api/games", gameId, "bottles"],
+    queryFn: () => apiRequest("GET", `/api/games/${gameId}/bottles`).then(res => res.json()),
     enabled: !!gameId,
   });
 
