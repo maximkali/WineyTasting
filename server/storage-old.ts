@@ -42,135 +42,150 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Games
+
   async createGame(game: InsertGame): Promise<Game> {
-    const [newGame] = await db.insert(games).values(game).returning();
+    const newGame: Game = {
+      ...game,
+      status: game.status || 'setup',
+      currentRound: game.currentRound || 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.games.set(game.id, newGame);
     return newGame;
   }
 
   async getGame(id: string): Promise<Game | undefined> {
-    const [game] = await db.select().from(games).where(eq(games.id, id));
-    return game || undefined;
+    return this.games.get(id);
   }
 
   async updateGame(id: string, updates: Partial<Game>): Promise<Game | undefined> {
-    const [updatedGame] = await db
-      .update(games)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(games.id, id))
-      .returning();
-    return updatedGame || undefined;
+    const game = this.games.get(id);
+    if (!game) return undefined;
+    
+    const updatedGame = { ...game, ...updates, updatedAt: new Date() };
+    this.games.set(id, updatedGame);
+    return updatedGame;
   }
 
-  // Bottles
-  async createBottles(bottleList: InsertBottle[]): Promise<Bottle[]> {
-    const createdBottles = await db.insert(bottles).values(bottleList).returning();
+  async createBottles(bottles: InsertBottle[]): Promise<Bottle[]> {
+    const createdBottles = bottles.map(bottle => {
+      this.bottles.set(bottle.id, bottle);
+      return bottle;
+    });
     return createdBottles;
   }
 
   async getBottlesByGame(gameId: string): Promise<Bottle[]> {
-    return await db.select().from(bottles).where(eq(bottles.gameId, gameId));
+    return Array.from(this.bottles.values()).filter(bottle => bottle.gameId === gameId);
   }
 
   async updateBottle(id: string, updates: Partial<Bottle>): Promise<Bottle | undefined> {
-    const [updatedBottle] = await db
-      .update(bottles)
-      .set(updates)
-      .where(eq(bottles.id, id))
-      .returning();
-    return updatedBottle || undefined;
+    const bottle = this.bottles.get(id);
+    if (!bottle) return undefined;
+    
+    const updatedBottle = { ...bottle, ...updates };
+    this.bottles.set(id, updatedBottle);
+    return updatedBottle;
   }
 
-  // Players
   async createPlayer(player: InsertPlayer): Promise<Player> {
-    const [newPlayer] = await db.insert(players).values(player).returning();
+    const newPlayer: Player = {
+      ...player,
+      createdAt: new Date(),
+    };
+    this.players.set(player.id, newPlayer);
     return newPlayer;
   }
 
   async getPlayersByGame(gameId: string): Promise<Player[]> {
-    return await db.select().from(players).where(eq(players.gameId, gameId));
+    return Array.from(this.players.values()).filter(player => player.gameId === gameId);
   }
 
   async getPlayer(id: string): Promise<Player | undefined> {
-    const [player] = await db.select().from(players).where(eq(players.id, id));
-    return player || undefined;
+    return this.players.get(id);
   }
 
   async updatePlayer(id: string, updates: Partial<Player>): Promise<Player | undefined> {
-    const [updatedPlayer] = await db
-      .update(players)
-      .set(updates)
-      .where(eq(players.id, id))
-      .returning();
-    return updatedPlayer || undefined;
+    const player = this.players.get(id);
+    if (!player) return undefined;
+    
+    const updatedPlayer = { ...player, ...updates };
+    this.players.set(id, updatedPlayer);
+    return updatedPlayer;
   }
 
-  // Rounds
-  async createRounds(roundList: InsertRound[]): Promise<Round[]> {
-    const createdRounds = await db.insert(rounds).values(roundList).returning();
+  async createRounds(rounds: InsertRound[]): Promise<Round[]> {
+    const createdRounds = rounds.map(round => {
+      this.rounds.set(round.id, round);
+      return round;
+    });
     return createdRounds;
   }
 
   async getRoundsByGame(gameId: string): Promise<Round[]> {
-    return await db.select().from(rounds).where(eq(rounds.gameId, gameId));
+    return Array.from(this.rounds.values()).filter(round => round.gameId === gameId);
   }
 
   async updateRound(id: string, updates: Partial<Round>): Promise<Round | undefined> {
-    const [updatedRound] = await db
-      .update(rounds)
-      .set(updates)
-      .where(eq(rounds.id, id))
-      .returning();
-    return updatedRound || undefined;
+    const round = this.rounds.get(id);
+    if (!round) return undefined;
+    
+    const updatedRound = { ...round, ...updates };
+    this.rounds.set(id, updatedRound);
+    return updatedRound;
   }
 
-  // Submissions
   async createSubmission(submission: InsertSubmission): Promise<Submission> {
-    const [newSubmission] = await db.insert(submissions).values(submission).returning();
+    const newSubmission: Submission = {
+      ...submission,
+      createdAt: new Date(),
+    };
+    this.submissions.set(submission.id, newSubmission);
     return newSubmission;
   }
 
   async getSubmissionsByRound(gameId: string, roundIndex: number): Promise<Submission[]> {
-    return await db
-      .select()
-      .from(submissions)
-      .where(and(eq(submissions.gameId, gameId), eq(submissions.roundIndex, roundIndex)));
+    return Array.from(this.submissions.values()).filter(
+      submission => submission.gameId === gameId && submission.roundIndex === roundIndex
+    );
   }
 
   async getPlayerSubmission(playerId: string, roundIndex: number): Promise<Submission | undefined> {
-    const [submission] = await db
-      .select()
-      .from(submissions)
-      .where(and(eq(submissions.playerId, playerId), eq(submissions.roundIndex, roundIndex)));
-    return submission || undefined;
+    return Array.from(this.submissions.values()).find(
+      submission => submission.playerId === playerId && submission.roundIndex === roundIndex
+    );
   }
 
   async updateSubmission(id: string, updates: Partial<Submission>): Promise<Submission | undefined> {
-    const [updatedSubmission] = await db
-      .update(submissions)
-      .set(updates)
-      .where(eq(submissions.id, id))
-      .returning();
-    return updatedSubmission || undefined;
+    const submission = this.submissions.get(id);
+    if (!submission) return undefined;
+    
+    const updatedSubmission = { ...submission, ...updates };
+    this.submissions.set(id, updatedSubmission);
+    return updatedSubmission;
   }
 
-  // Gambit Submissions
   async createGambitSubmission(gambitSubmission: InsertGambitSubmission): Promise<GambitSubmission> {
-    const [newGambitSubmission] = await db.insert(gambitSubmissions).values(gambitSubmission).returning();
+    const newGambitSubmission: GambitSubmission = {
+      ...gambitSubmission,
+      createdAt: new Date(),
+    };
+    this.gambitSubmissions.set(gambitSubmission.id, newGambitSubmission);
     return newGambitSubmission;
   }
 
   async getGambitSubmissionsByGame(gameId: string): Promise<GambitSubmission[]> {
-    return await db.select().from(gambitSubmissions).where(eq(gambitSubmissions.gameId, gameId));
+    return Array.from(this.gambitSubmissions.values()).filter(
+      submission => submission.gameId === gameId
+    );
   }
 
   async getPlayerGambitSubmission(playerId: string): Promise<GambitSubmission | undefined> {
-    const [gambitSubmission] = await db
-      .select()
-      .from(gambitSubmissions)
-      .where(eq(gambitSubmissions.playerId, playerId));
-    return gambitSubmission || undefined;
+    return Array.from(this.gambitSubmissions.values()).find(
+      submission => submission.playerId === playerId
+    );
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
