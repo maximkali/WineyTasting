@@ -395,6 +395,27 @@ export default function Setup() {
     }
   };
 
+  // Validation helper function
+  const isWineDataValid = () => {
+    if (!selectedConfig) return false;
+    
+    // Check if we have the right number of bottles
+    if (bottles.length !== selectedConfig.bottles) return false;
+    
+    // Check if all bottles have required fields
+    for (const bottle of bottles) {
+      if (!bottle.labelName.trim()) return false;
+      if (!bottle.price.trim() || isNaN(parseFloat(bottle.price)) || parseFloat(bottle.price) <= 0) return false;
+    }
+    
+    // Check for duplicate prices
+    const prices = bottles.map(b => parseFloat(b.price)).filter(p => !isNaN(p) && p > 0);
+    const uniquePrices = new Set(prices);
+    if (uniquePrices.size !== prices.length) return false;
+    
+    return true;
+  };
+
   const handleWineSubmit = () => {
     if (!selectedConfig) return;
     
@@ -598,7 +619,7 @@ export default function Setup() {
                 
                 <Button 
                   onClick={handleConfigSave} 
-                  disabled={saveConfigMutation.isPending}
+                  disabled={saveConfigMutation.isPending || !selectedConfig}
                   className="w-full"
                   size="lg"
                 >
@@ -713,7 +734,7 @@ export default function Setup() {
             <div className="flex gap-4">
               <Button 
                 onClick={handleWineSubmit} 
-                disabled={addBottlesMutation.isPending}
+                disabled={addBottlesMutation.isPending || !isWineDataValid()}
                 className="flex-1"
               >
                 {addBottlesMutation.isPending ? (
