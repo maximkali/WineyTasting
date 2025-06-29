@@ -124,8 +124,8 @@ export const setGameConfigSchema = z.object({
 
 export const addBottlesSchema = z.object({
   bottles: z.array(z.object({
-    labelName: z.string().min(3).max(20),
-    funName: z.string().max(40).optional(),
+    labelName: z.string().min(3).max(60),
+    funName: z.string().max(40).optional().nullable(),
     price: z.number().min(1),
   })).min(9).max(20),
 });
