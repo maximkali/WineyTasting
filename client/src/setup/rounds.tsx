@@ -509,7 +509,7 @@ export default function Rounds() {
         )}
 
         {/* Save button */}
-        <div className="flex justify-end">
+        <div className="flex justify-center">
           <Button
             onClick={handleSave}
             disabled={unassignedWines.length > 0 || saveRoundsMutation.isPending}
@@ -520,8 +520,7 @@ export default function Rounds() {
               "Saving..."
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
-                Save and Continue
+                💾 Save & Continue
               </>
             )}
           </Button>
