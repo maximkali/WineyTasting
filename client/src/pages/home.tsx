@@ -77,9 +77,7 @@ export default function Home() {
           <CardContent className="p-6">
             <div className="space-y-4">
               <div>
-                <Label className="text-base font-medium">
-                  You'll be the blind tasting host
-                </Label>
+                <Label className="text-base font-medium">Are you hosting a blind tasting?</Label>
                 <div className="space-y-3 mt-2">
                   <Input
                     id="firstName"
