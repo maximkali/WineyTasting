@@ -57,7 +57,8 @@ export default function Home() {
     <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-wine mb-4">🍷 Winey</h1>
+          <h1 className="text-5xl font-bold text-wine mb-4">🍷 WINEY
+</h1>
           <p className="text-xl text-gray-600">
             The ultimate wine tasting game
           </p>
