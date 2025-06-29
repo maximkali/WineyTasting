@@ -113,7 +113,6 @@ export default function Rounds() {
   const { gameId } = useParams<{ gameId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Get host token and temporary wines from session storage
   const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
