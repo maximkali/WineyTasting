@@ -19,9 +19,9 @@ export default function Home() {
       return res.json();
     },
     onSuccess: (data) => {
-      localStorage.setItem("hostToken", data.hostToken);
-      localStorage.setItem("playerId", data.playerId);
-      setLocation(`/setup/${data.game.id}`);
+      sessionStorage.setItem(`hostToken_${data.game.id}`, data.hostToken);
+      sessionStorage.setItem(`playerId_${data.game.id}`, data.playerId);
+      setLocation(`/game/${data.game.id}/setup`);
     },
     onError: () => {
       toast({

@@ -124,5 +124,5 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
-- June 29, 2025. Added PostgreSQL database with Drizzle ORM integration, implemented host-picker system with configurable game setups
+- June 29, 2025. Added PostgreSQL database with Drizzle ORM integration, implemented host-picker system with configurable game setups, fixed routing issue preventing game creation flow
 - June 28, 2025. Initial setup
