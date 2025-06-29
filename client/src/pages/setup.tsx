@@ -309,6 +309,18 @@ export default function Setup() {
       });
       return;
     }
+    
+    // Check if configuration already exists and matches current selection
+    const game = gameData?.game;
+    if (game?.totalBottles === selectedConfig.bottles && 
+        game?.maxPlayers === selectedConfig.players &&
+        game?.totalRounds === selectedConfig.rounds &&
+        bottlesData?.bottles?.length > 0) {
+      // Configuration unchanged and bottles exist, go directly to wines
+      setConfigurationStep('wines');
+      return;
+    }
+    
     saveConfigMutation.mutate(selectedConfig);
   };
 
@@ -505,7 +517,11 @@ export default function Setup() {
                   className="w-full"
                   size="lg"
                 >
-                  {saveConfigMutation.isPending ? "Creating..." : "Next"}
+                  {saveConfigMutation.isPending ? "Creating..." : 
+                   (gameData?.game?.totalBottles === selectedConfig?.bottles && 
+                    gameData?.game?.maxPlayers === selectedConfig?.players &&
+                    gameData?.game?.totalRounds === selectedConfig?.rounds &&
+                    bottlesData?.bottles?.length > 0) ? "Continue to Wine List" : "Next"}
                 </Button>
               </div>
             )}
