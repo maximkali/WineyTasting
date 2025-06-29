@@ -53,6 +53,7 @@ export default function WineList() {
         funName: bottle.funName,
         price: bottle.price / 100 // Convert from cents
       }));
+      console.log('[DEBUG] Wine List - Loading bottles from DB:', wineData);
       setWines(wineData);
     }
   }, [bottlesData]);
