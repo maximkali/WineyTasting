@@ -92,6 +92,13 @@
     border: 2px dashed hsl(346, 77%, 26%) !important;
     background-color: hsl(338, 56%, 87%, 0.2) !important;
   }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 @keyframes fadeSlideIn {

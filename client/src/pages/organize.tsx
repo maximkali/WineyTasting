@@ -39,20 +39,29 @@ function SortableWine({ wine, index }: SortableWineProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col items-center gap-1 p-2 bg-white border rounded-lg touch-manipulation w-16 h-20 ${
+      className={`flex flex-col gap-2 p-3 bg-white border rounded-lg touch-manipulation min-h-[100px] w-full ${
         isDragging ? "shadow-lg" : ""
       }`}
-      title={`${wine.labelName}${wine.funName ? ` (${wine.funName})` : ''} - $${wine.price}`}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col items-center justify-center"
+        className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col"
       >
-        <div className="w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold mb-1">
-          {String.fromCharCode(65 + index)}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-6 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+            {String.fromCharCode(65 + index)}
+          </div>
+          <div className="text-xs font-medium">${wine.price}</div>
         </div>
-        <div className="text-xs font-medium text-center leading-tight truncate w-full">${wine.price}</div>
+        <div className="text-sm font-medium text-gray-900 leading-tight mb-1 line-clamp-2">
+          {wine.labelName}
+        </div>
+        {wine.funName && (
+          <div className="text-xs text-gray-600 leading-tight line-clamp-2">
+            {wine.funName}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -77,8 +86,8 @@ function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="min-h-[150px] md:min-h-[200px]">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="min-h-[200px] md:min-h-[250px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
@@ -289,7 +298,7 @@ export default function Organize() {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
-                    <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {unassignedWines.map((wine, index) => (
                         <SortableWine key={wine.id} wine={wine} index={index} />
                       ))}
