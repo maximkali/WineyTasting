@@ -540,7 +540,8 @@ export default function Setup() {
   }
 
   // Wine entry step
-  const canRandomize = selectedConfig && gameData.bottleCount === selectedConfig.bottles;
+  const currentBottleCount = bottles.length;
+  const canRandomize = selectedConfig && currentBottleCount === selectedConfig.bottles;
 
   return (
     <div className="min-h-screen bg-gray-50">
