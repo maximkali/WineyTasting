@@ -7,7 +7,7 @@ import { Label } from "@/common/ui/label";
 import { Badge } from "@/common/ui/badge";
 import { Separator } from "@/common/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/ui/select";
-import { Trash2, Settings, Users, Wine, RotateCcw, Plus } from "lucide-react";
+import { Trash2, Settings, Users, Wine, RotateCcw, Plus, Save } from "lucide-react";
 import WineyHeader from "@/common/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/common/lib/queryClient";
@@ -697,7 +697,13 @@ export default function Setup() {
               disabled={addBottlesMutation.isPending}
               className="flex-1"
             >
-              {addBottlesMutation.isPending ? "Adding..." : "🔒 Lock the Lineup 🔒"}
+              {addBottlesMutation.isPending ? (
+                "Saving..."
+              ) : (
+                <>
+                  💾 Save & Continue
+                </>
+              )}
             </Button>
           </div>
 
