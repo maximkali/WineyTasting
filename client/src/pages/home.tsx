@@ -23,13 +23,12 @@ export default function Home() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
-            <Link href="/setup">
-              <button
-                className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px] inline-flex items-center justify-center"
-              >
-                Host a Tasting
-              </button>
-            </Link>
+            <Button
+              onClick={() => setLocation("/setup")}
+              className="bg-wine hover:bg-wine/90 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105 min-w-[180px]"
+            >
+              Host a Tasting
+            </Button>
             
             <Button
               variant="outline"
