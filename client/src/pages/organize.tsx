@@ -25,9 +25,10 @@ interface Wine {
 interface SortableWineProps {
   wine: Wine;
   index: number;
+  othersDragging?: boolean;
 }
 
-function SortableWine({ wine, index }: SortableWineProps) {
+function SortableWine({ wine, index, othersDragging = false }: SortableWineProps) {
   const {
     attributes,
     listeners,
@@ -42,18 +43,25 @@ function SortableWine({ wine, index }: SortableWineProps) {
     transition,
   };
 
+  const isCurrentlyDragging = isDragging;
+  const shouldDisable = othersDragging && !isCurrentlyDragging;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white border rounded-lg touch-manipulation w-full shadow-sm hover:shadow-md transition-shadow ${
-        isDragging ? "shadow-lg opacity-50" : ""
+      className={`bg-white border rounded-lg touch-manipulation w-full shadow-sm hover:shadow-md transition-all duration-200 ${
+        isCurrentlyDragging ? "shadow-lg opacity-50 z-50" : ""
+      } ${
+        shouldDisable ? "opacity-30 pointer-events-none" : ""
       }`}
     >
       <div
         {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing w-full h-full flex items-center gap-3 p-3"
+        {...(shouldDisable ? {} : listeners)}
+        className={`w-full h-full flex items-center gap-3 p-3 ${
+          shouldDisable ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing"
+        }`}
       >
         {/* Avatar on the left */}
         <div className="w-8 h-8 bg-wine text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -84,9 +92,10 @@ function SortableWine({ wine, index }: SortableWineProps) {
 
 interface AvailableWinesCardProps {
   wines: Wine[];
+  isDragging?: boolean;
 }
 
-function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
+function AvailableWinesCard({ wines, isDragging = false }: AvailableWinesCardProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: 'unassigned',
   });
@@ -116,7 +125,7 @@ function AvailableWinesCard({ wines }: AvailableWinesCardProps) {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[200px]">
             {wines.map((wine, index) => (
-              <SortableWine key={wine.id} wine={wine} index={index} />
+              <SortableWine key={wine.id} wine={wine} index={index} othersDragging={isDragging} />
             ))}
             {wines.length === 0 && (
               <div className="col-span-full text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
@@ -134,9 +143,10 @@ interface RoundCardProps {
   round: number;
   wines: Wine[];
   bottlesPerRound: number;
+  isDragging?: boolean;
 }
 
-function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
+function RoundCard({ round, wines, bottlesPerRound, isDragging = false }: RoundCardProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: `round-${round}`,
   });
@@ -169,7 +179,7 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
             >
               <div className="space-y-2">
                 {wines.map((wine, index) => (
-                  <SortableWine key={wine.id} wine={wine} index={index} />
+                  <SortableWine key={wine.id} wine={wine} index={index} othersDragging={isDragging} />
                 ))}
               </div>
             </SortableContext>
@@ -230,6 +240,7 @@ export default function Organize() {
 
   const [rounds, setRounds] = useState<Wine[][]>([]);
   const [unassignedWines, setUnassignedWines] = useState<Wine[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Initialize rounds when game data is available
   useEffect(() => {
@@ -255,8 +266,14 @@ export default function Organize() {
     }
   }, [gameData]);
 
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    setIsDragging(false);
     
     if (!over || active.id === over.id) return;
 
@@ -377,10 +394,11 @@ export default function Organize() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           {/* Available Wines - Horizontal layout at top */}
-          <AvailableWinesCard wines={unassignedWines} />
+          <AvailableWinesCard wines={unassignedWines} isDragging={isDragging} />
 
           {/* Rounds */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -390,6 +408,7 @@ export default function Organize() {
                 round={roundIndex}
                 wines={roundWines}
                 bottlesPerRound={bottlesPerRound}
+                isDragging={isDragging}
               />
             ))}
           </div>
