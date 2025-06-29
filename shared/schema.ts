@@ -31,6 +31,7 @@ export const bottles = pgTable("bottles", {
   funName: text("fun_name"),
   price: integer("price").notNull(),
   roundIndex: integer("round_index"),
+  orderIndex: integer("order_index").notNull(), // Preserve original entry order
 });
 
 export const players = pgTable("players", {

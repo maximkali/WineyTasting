@@ -220,13 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'All label names must be unique' });
       }
       
-      const bottles = bottleData.map(bottle => ({
+      const bottles = bottleData.map((bottle, index) => ({
         id: generateId(),
         gameId,
         labelName: bottle.labelName,
         funName: bottle.funName || null,
         price: Math.round(bottle.price * 100), // Convert to cents and store as integer
         roundIndex: null,
+        orderIndex: index, // Preserve original entry order
       }));
       
       await storage.createBottles(bottles);
@@ -293,14 +294,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.deleteBottle(bottle.id);
       }
       
-      // Create new bottles
-      const bottles = bottleData.map(bottle => ({
+      // Create new bottles with orderIndex to preserve original order
+      const bottles = bottleData.map((bottle, index) => ({
         id: generateId(),
         gameId,
         labelName: bottle.labelName,
         funName: bottle.funName || null,
         price: Math.round(bottle.price * 100), // Convert to cents
         roundIndex: null,
+        orderIndex: index, // Preserve original entry order
       }));
       
       await storage.createBottles(bottles);

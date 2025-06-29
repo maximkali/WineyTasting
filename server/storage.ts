@@ -5,7 +5,7 @@ import {
   games, bottles, players, rounds, submissions, gambitSubmissions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Games
@@ -70,7 +70,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBottlesByGame(gameId: string): Promise<Bottle[]> {
-    return await db.select().from(bottles).where(eq(bottles.gameId, gameId));
+    return await db.select().from(bottles).where(eq(bottles.gameId, gameId)).orderBy(asc(bottles.orderIndex));
   }
 
   async updateBottle(id: string, updates: Partial<Bottle>): Promise<Bottle | undefined> {
