@@ -8,10 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import WineyHeader from "@/components/winey-header";
 
 export default function Home() {
+  console.log("Home component rendering");
   const [, setLocation] = useLocation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const { toast } = useToast();
+  
+  console.log("Home state:", { firstName, lastName });
 
   // Generate temporary game ID for session storage
   const generateTempGameId = () => {
@@ -19,42 +22,59 @@ export default function Home() {
   };
 
   const handleCreateGame = () => {
-    console.log("Create game clicked, current values:", { firstName, lastName });
-    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-    
-    if (!firstName.trim() || !lastName.trim()) {
-      toast({
-        title: "Please enter your name",
-        description: "Both first and last name are required.",
-        variant: "destructive",
-      });
-      return;
-    }
+    try {
+      console.log("Create game clicked, current values:", { firstName, lastName });
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      
+      if (!firstName.trim() || !lastName.trim()) {
+        try {
+          toast({
+            title: "Please enter your name",
+            description: "Both first and last name are required.",
+            variant: "destructive",
+          });
+        } catch (toastError) {
+          alert("Please enter both first and last name");
+        }
+        return;
+      }
 
-    // Generate temporary game ID and store host info in session
-    const tempGameId = generateTempGameId();
-    const tempHostToken = Math.random().toString(36).substring(2, 32);
-    
-    sessionStorage.setItem(`tempGame_${tempGameId}`, JSON.stringify({
-      hostDisplayName: fullName,
-      gameId: tempGameId,
-      hostToken: tempHostToken,
-      created: new Date().toISOString(),
-      status: 'temp'
-    }));
-    
-    console.log("Starting temporary game:", tempGameId);
-    setLocation(`/setup/${tempGameId}`);
+      // Generate temporary game ID and store host info in session
+      const tempGameId = generateTempGameId();
+      const tempHostToken = Math.random().toString(36).substring(2, 32);
+      
+      sessionStorage.setItem(`tempGame_${tempGameId}`, JSON.stringify({
+        hostDisplayName: fullName,
+        gameId: tempGameId,
+        hostToken: tempHostToken,
+        created: new Date().toISOString(),
+        status: 'temp'
+      }));
+      
+      console.log("Starting temporary game:", tempGameId);
+      setLocation(`/setup/${tempGameId}`);
+    } catch (error) {
+      console.error("Error in handleCreateGame:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("First name changing to:", e.target.value);
-    setFirstName(e.target.value);
+    try {
+      console.log("First name changing to:", e.target.value);
+      setFirstName(e.target.value);
+    } catch (error) {
+      console.error("Error changing first name:", error);
+    }
   };
 
   const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("Last name changing to:", e.target.value);
-    setLastName(e.target.value);
+    try {
+      console.log("Last name changing to:", e.target.value);
+      setLastName(e.target.value);
+    } catch (error) {
+      console.error("Error changing last name:", error);
+    }
   };
 
   return (
