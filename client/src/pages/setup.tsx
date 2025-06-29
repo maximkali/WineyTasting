@@ -207,7 +207,8 @@ export default function Setup() {
   });
 
   // Show loading while game data is being fetched
-  if (gameLoading || bottlesLoading) {
+  // Handle loading for real games only
+  if (!isTemporaryGame && (gameLoading || bottlesLoading)) {
     return (
       <div className="container max-w-2xl mx-auto p-6 flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -218,15 +219,23 @@ export default function Setup() {
     );
   }
 
-  // Handle missing host token or game data after loading
-  if (!gameData?.game || !hostToken) {
+  // Handle missing host token
+  if (!hostToken) {
     setLocation("/");
     return null;
   }
 
-  if (gameData.game.status !== "setup") {
-    setLocation(`/lobby/${gameId}`);
-    return null;
+  // Handle real games - check for game data and status
+  if (!isTemporaryGame) {
+    if (!gameData?.game) {
+      setLocation("/");
+      return null;
+    }
+    
+    if (gameData.game.status !== "setup") {
+      setLocation(`/lobby/${gameId}`);
+      return null;
+    }
   }
 
   const updateBottle = (index: number, field: keyof typeof bottles[0], value: string) => {
