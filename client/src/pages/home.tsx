@@ -106,13 +106,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Game flow tagline */}
-            <div className="text-center mt-8 text-gray-500 text-sm">
-              🍷 Sip → 🔢 Rank → ✅ Score → 🥇 Win
-            </div>
-
           </CardContent>
         </Card>
+
+        {/* Game flow tagline */}
+        <div className="text-center mt-8 text-gray-500 text-sm">
+          🍷 Sip → 🔢 Rank → ✅ Score → 🥇 Win
+        </div>
 
         </div>
       </div>
