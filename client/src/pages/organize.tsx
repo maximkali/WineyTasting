@@ -539,7 +539,7 @@ export default function Organize() {
             </Button>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
-            Organize Wines into Rounds
+            Rounds
           </h1>
           <p className="text-gray-600 text-center">
             Assign your {wines.length} wines to {game.totalRounds} rounds ({game.bottlesPerRound} wines per round)

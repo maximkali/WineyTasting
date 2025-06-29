@@ -387,7 +387,7 @@ export default function Setup() {
           </Button>
         </div>
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Hey {gameData?.players?.find(p => p.isHost)?.displayName?.split(' ')[0] || 'there'} – let's design your blind tasting!</h1>
+          <h1 className="text-2xl font-bold">Setup</h1>
           <p className="text-muted-foreground">Choose the player, bottle, and round counts below, then click Next. On the next screen enter each wine’s label name, blind nickname, and price. After that you’ll assign the wines to their rounds. You can edit or reorder anything until you press Start.</p>
         </div>
 
@@ -538,7 +538,7 @@ export default function Setup() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Wine className="h-5 w-5" />
-            <CardTitle>Wine List Entry</CardTitle>
+            <CardTitle>Wine List</CardTitle>
           </div>
           {selectedConfig && (
             <div className="flex gap-2 flex-wrap">
