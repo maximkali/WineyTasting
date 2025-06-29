@@ -350,7 +350,7 @@ export default function Setup() {
                     <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
                       Tastings per Round:
                     </div>
-                    <div className="text-2xl font-bold">{selectedConfig.bottlesPerRound}</div>
+                    <div className="text-2xl font-bold">{selectedConfig.bottlesPerRound} wines</div>
                   </div>
                   <div>
                     <div className="text-sm font-medium uppercase text-muted-foreground mb-1">
