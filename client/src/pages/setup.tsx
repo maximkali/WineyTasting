@@ -487,7 +487,7 @@ export default function Setup() {
               disabled={addBottlesMutation.isPending}
               className="flex-1"
             >
-              {addBottlesMutation.isPending ? "Adding..." : "🍇  Bring the Juice  🍇"}
+              {addBottlesMutation.isPending ? "Adding..." : "🔒 Lock the Lineup 🔒"}
             </Button>
             
             {canRandomize && (
