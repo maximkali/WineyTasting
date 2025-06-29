@@ -166,7 +166,7 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
             items={wines.map(w => w.id)}
             strategy={rectSortingStrategy}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-2">
               {wines.map((wine, index) => (
                 <SortableWine key={wine.id} wine={wine} index={index} />
               ))}
@@ -175,7 +175,7 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
           
           {/* Empty slots visual indicator */}
           {wines.length < bottlesPerRound && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="space-y-2">
               {Array.from({ length: bottlesPerRound - wines.length }).map((_, index) => (
                 <div
                   key={`empty-${index}`}
