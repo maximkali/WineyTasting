@@ -211,7 +211,7 @@ export default function Setup() {
         title: "Success",
         description: "Wines saved successfully! Now organize them into rounds.",
       });
-      setLocation(`/organize/${gameId}`);
+      setLocation(`/rounds/${gameId}`);
     },
     onError: (error) => {
       toast({
