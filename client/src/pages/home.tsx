@@ -19,6 +19,7 @@ export default function Home() {
   };
 
   const handleCreateGame = () => {
+    console.log("Create game clicked, current values:", { firstName, lastName });
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     
     if (!firstName.trim() || !lastName.trim()) {
@@ -46,6 +47,16 @@ export default function Home() {
     setLocation(`/setup/${tempGameId}`);
   };
 
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("First name changing to:", e.target.value);
+    setFirstName(e.target.value);
+  };
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("Last name changing to:", e.target.value);
+    setLastName(e.target.value);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
@@ -63,16 +74,20 @@ export default function Home() {
                     type="text"
                     placeholder="First name"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={handleFirstNameChange}
                     maxLength={15}
+                    autoComplete="given-name"
+                    className="w-full"
                   />
                   <Input
                     id="lastName"
                     type="text"
                     placeholder="Last name"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={handleLastNameChange}
                     maxLength={15}
+                    autoComplete="family-name"
+                    className="w-full"
                   />
                 </div>
               </div>
