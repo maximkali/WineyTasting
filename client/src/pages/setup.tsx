@@ -61,29 +61,7 @@ export default function Setup() {
     }
   }, [selectedConfig]);
 
-  // Show loading while game data is being fetched
-  if (gameLoading) {
-    return (
-      <div className="container max-w-2xl mx-auto p-6 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading game...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle missing host token or game data after loading
-  if (!gameData?.game || !hostToken) {
-    setLocation("/");
-    return null;
-  }
-
-  if (gameData.game.status !== "setup") {
-    setLocation(`/lobby/${gameId}`);
-    return null;
-  }
-
+  // All hooks must be declared before any conditional returns
   const saveConfigMutation = useMutation({
     mutationFn: async (config: GameSetupOption) => {
       const res = await apiRequest("POST", `/api/games/${gameId}/config`, config, {
@@ -155,6 +133,29 @@ export default function Setup() {
       });
     },
   });
+
+  // Show loading while game data is being fetched
+  if (gameLoading) {
+    return (
+      <div className="container max-w-2xl mx-auto p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle missing host token or game data after loading
+  if (!gameData?.game || !hostToken) {
+    setLocation("/");
+    return null;
+  }
+
+  if (gameData.game.status !== "setup") {
+    setLocation(`/lobby/${gameId}`);
+    return null;
+  }
 
   const updateBottle = (index: number, field: keyof typeof bottles[0], value: string) => {
     setBottles(prev => prev.map((bottle, i) => 
