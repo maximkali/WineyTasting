@@ -122,7 +122,7 @@ export default function Rounds() {
   
   // Bottles data - read directly from database
   const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
-    queryKey: ['/api/games', gameId, 'bottles'],
+    queryKey: [`/api/games/${gameId}/bottles`],
     enabled: !!gameId && !!hostToken,
   });
   
@@ -133,6 +133,15 @@ export default function Rounds() {
   
   // Load wines from database on mount
   useEffect(() => {
+    console.log('[DEBUG] Rounds page - useEffect triggered:', {
+      bottlesData,
+      gameData,
+      gameId,
+      hostToken,
+      bottlesLoading,
+      gameLoading
+    });
+    
     if (bottlesData?.bottles && gameData?.game) {
       const wineData = bottlesData.bottles.map((bottle: any, index: number) => ({
         id: bottle.id,
@@ -147,8 +156,15 @@ export default function Rounds() {
       // Initialize empty rounds
       const totalRounds = gameData.game.totalRounds || 5;
       setRounds(Array(totalRounds).fill(null).map(() => []));
+    } else {
+      console.log('[DEBUG] Rounds page - Missing data:', {
+        hasBottlesData: !!bottlesData?.bottles,
+        bottlesCount: bottlesData?.bottles?.length,
+        hasGameData: !!gameData?.game,
+        gameDataGame: gameData?.game
+      });
     }
-  }, [bottlesData, gameData]);
+  }, [bottlesData, gameData, gameId, hostToken, bottlesLoading, gameLoading]);
 
   // Get unassigned wines
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
@@ -403,11 +419,11 @@ export default function Rounds() {
         <div className="flex justify-end">
           <Button
             onClick={handleSave}
-            disabled={unassignedWines.length > 0 || saveWinesAndRoundsMutation.isPending}
+            disabled={unassignedWines.length > 0 || saveRoundsMutation.isPending}
             size="lg"
             className="min-w-[200px]"
           >
-            {saveWinesAndRoundsMutation.isPending ? (
+            {saveRoundsMutation.isPending ? (
               "Saving..."
             ) : (
               <>

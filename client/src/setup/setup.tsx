@@ -540,15 +540,6 @@ export default function Setup() {
   }
 
   // Wine entry step
-  const currentBottleCount = bottles.length;
-  const canRandomize = selectedConfig && currentBottleCount === selectedConfig.bottles;
-  
-  console.log('[DEBUG] canRandomize check:', {
-    selectedConfig: !!selectedConfig,
-    currentBottleCount,
-    requiredBottles: selectedConfig?.bottles,
-    canRandomize
-  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -638,29 +629,9 @@ export default function Setup() {
             >
               {addBottlesMutation.isPending ? "Adding..." : "🔒 Lock the Lineup 🔒"}
             </Button>
-            
-            {canRandomize && (
-              <>
-                <Button 
-                  onClick={() => setLocation(`/rounds/${gameId}`)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Organize Wines
-                </Button>
-                
-                <Button 
-                  onClick={() => randomizeMutation.mutate()}
-                  disabled={randomizeMutation.isPending}
-                  className="flex-1"
-                >
-                  {randomizeMutation.isPending ? "Randomizing..." : `Auto-Assign to ${selectedConfig?.rounds} Rounds`}
-                </Button>
-              </>
-            )}
           </div>
 
-          {!canRandomize && selectedConfig && bottles.length > 0 && (
+          {selectedConfig && bottles.length > 0 && bottles.length < selectedConfig.bottles && (
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Once you've added all your wines, we'll organize them into {selectedConfig.rounds} tasting rounds for you.
@@ -668,10 +639,10 @@ export default function Setup() {
             </div>
           )}
 
-          {canRandomize && (
+          {selectedConfig && bottles.length === selectedConfig.bottles && (
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                Ready to start! Click "Randomize into {selectedConfig?.rounds} Rounds" to generate your game link.
+                Ready to start! Your wines are saved and ready to organize into rounds.
               </p>
             </div>
           )}
