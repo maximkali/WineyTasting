@@ -264,7 +264,7 @@ export default function Setup() {
         <WineyHeader />
         <div className="container max-w-2xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Let's set up your tasting adventure!</h1>
+          <h1 className="text-2xl font-bold">Set up your tasting adventure!</h1>
           <p className="text-muted-foreground">Complete the basic settings below to get started. Then, add each wine's details – we'll need the label name, a fun nickname, price, and which round it should be served. Don't worry, you can tweak everything later if needed.</p>
         </div>
 
