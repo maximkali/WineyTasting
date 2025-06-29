@@ -431,8 +431,7 @@ export default function Setup() {
               disabled={!selectedConfig || bottles.length >= selectedConfig.bottles} 
               className="flex-1"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Wine
+              Add Another Bottle
             </Button>
           </div>
 
