@@ -7,22 +7,15 @@ import { DragEndEvent, DndContext, closestCorners, PointerSensor, useSensor, use
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { Wine, Settings, GripVertical } from "lucide-react";
 import WineyHeader from "@/components/winey-header";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/hooks/use-game";
 
-interface Wine {
-  id: string;
-  labelName: string;
-  funName: string | null;
-  price: number;
-}
-
 interface SortableWineProps {
-  wine: Wine;
+  wine: any;
   index: number;
 }
 
@@ -39,13 +32,14 @@ function SortableWine({ wine, index }: SortableWineProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-2 p-3 bg-white border rounded-lg touch-manipulation min-h-[100px] w-full shadow-sm hover:shadow-md transition-shadow ${
+      className={`flex flex-col gap-3 p-4 bg-white border rounded-lg touch-manipulation min-h-[120px] w-full shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "shadow-lg opacity-50" : ""
       }`}
     >
@@ -54,18 +48,18 @@ function SortableWine({ wine, index }: SortableWineProps) {
         {...listeners}
         className="cursor-grab active:cursor-grabbing w-full h-full flex flex-col gap-2"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-slate-700 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-slate-700 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
             {String.fromCharCode(65 + index)}
           </div>
           <div className="text-sm font-semibold text-green-700">${wine.price}</div>
           <GripVertical className="h-4 w-4 text-gray-400 ml-auto" />
         </div>
-        <div className="text-sm font-medium text-gray-900 leading-tight">
+        <div className="text-sm font-medium text-gray-900 leading-relaxed">
           {wine.labelName}
         </div>
         {wine.funName && (
-          <div className="text-xs text-gray-600 leading-tight">
+          <div className="text-xs text-gray-600 leading-relaxed">
             {wine.funName}
           </div>
         )}
@@ -76,15 +70,16 @@ function SortableWine({ wine, index }: SortableWineProps) {
 
 interface RoundCardProps {
   round: number;
-  wines: Wine[];
+  wines: any[];
+  onDrop: (wineId: string, roundIndex: number) => void;
   bottlesPerRound: number;
 }
 
-function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
+function RoundCard({ round, wines, onDrop, bottlesPerRound }: RoundCardProps) {
   return (
-    <Card className="min-h-[250px]">
+    <Card className="min-h-[250px] md:min-h-[300px]">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
+        <CardTitle className="flex items-center justify-between text-base md:text-lg">
           <span>Round {round + 1}</span>
           <Badge variant={wines.length === bottlesPerRound ? "default" : "secondary"} className="text-xs">
             {wines.length}/{bottlesPerRound}
@@ -92,14 +87,14 @@ function RoundCard({ round, wines, bottlesPerRound }: RoundCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="min-h-[200px]">
+        <div className="min-h-[200px] md:min-h-[250px]">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {wines.map((wine, index) => (
               <SortableWine key={wine.id} wine={wine} index={index} />
             ))}
           </div>
           {wines.length === 0 && (
-            <div className="text-center text-gray-400 py-8 text-sm">
+            <div className="text-center text-gray-400 py-6 md:py-8 text-sm">
               Drag wines here
             </div>
           )}
@@ -135,20 +130,18 @@ export default function Organize() {
     })
   );
 
-  // Fetch game data
+  // Fetch game data using the hook
   const { data: gameData, isLoading, error } = useGame(gameId!);
 
-  const [rounds, setRounds] = useState<Wine[][]>([]);
-  const [unassignedWines, setUnassignedWines] = useState<Wine[]>([]);
+  const [rounds, setRounds] = useState<any[][]>([]);
+  const [unassignedWines, setUnassignedWines] = useState<any[]>([]);
 
   // Initialize rounds when game data is available
   useEffect(() => {
-    console.log("Full game data:", gameData);
-    
-    if (gameData?.game?.bottles && Array.isArray(gameData.game.bottles)) {
-      const totalRounds = gameData.game.totalRounds || 5;
+    if (gameData?.game?.bottles) {
+      const totalRounds = gameData.game.totalRounds || 4;
       
-      console.log("Setting up", totalRounds, "rounds with", gameData.game.bottles.length, "bottles");
+      console.log("Initializing with", totalRounds, "rounds and", gameData.game.bottles.length, "bottles");
       
       // Initialize empty rounds
       const emptyRounds = Array(totalRounds).fill(null).map(() => []);
@@ -156,8 +149,6 @@ export default function Organize() {
       
       // Set all bottles as unassigned initially
       setUnassignedWines([...gameData.game.bottles]);
-    } else {
-      console.log("No bottles found in game data");
     }
   }, [gameData]);
 
@@ -266,13 +257,13 @@ export default function Organize() {
     return <div className="flex justify-center items-center min-h-screen">Game not found</div>;
   }
 
-  const totalRounds = gameData.game.totalRounds || 5;
+  const totalRounds = gameData.game.totalRounds || 4;
   const bottlesPerRound = gameData.game.bottlesPerRound || 4;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <WineyHeader />
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="container mx-auto p-4 space-y-4">
         <div className="text-center">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Organize Wine Rounds</h1>
           <p className="text-gray-600 text-sm md:text-base">
@@ -285,61 +276,65 @@ export default function Organize() {
           collisionDetection={closestCorners}
           onDragEnd={handleDragEnd}
         >
-          {/* Available Wines - Horizontal layout at top */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-lg">
-                <span>Available Wines</span>
-                <Badge variant="secondary">
-                  {unassignedWines.length} remaining
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SortableContext 
-                items={unassignedWines.map(w => w.id)}
-                strategy={rectSortingStrategy}
-              >
-                <div className="max-h-96 overflow-y-auto" id="unassigned">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {unassignedWines.map((wine, index) => (
-                      <SortableWine key={wine.id} wine={wine} index={index} />
-                    ))}
-                  </div>
-                  {unassignedWines.length === 0 && (
-                    <div className="text-center text-gray-400 py-8">
-                      All wines assigned to rounds
-                    </div>
-                  )}
-                </div>
-              </SortableContext>
-            </CardContent>
-          </Card>
-
-          {/* Rounds */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rounds.map((roundWines, roundIndex) => (
-              <div key={roundIndex} id={`round-${roundIndex}`}>
+          {/* Mobile-first layout */}
+          <div className="space-y-4">
+            {/* Available Wines - Always at top on mobile */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between text-lg">
+                  <span>Available Wines</span>
+                  <Badge variant="secondary">
+                    {unassignedWines.length} remaining
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <SortableContext 
-                  items={roundWines.map(w => w.id)}
+                  items={unassignedWines.map(w => w.id)}
                   strategy={rectSortingStrategy}
                 >
-                  <RoundCard
-                    round={roundIndex}
-                    wines={roundWines}
-                    bottlesPerRound={bottlesPerRound}
-                  />
+                  <div className="max-h-60 md:max-h-80 overflow-y-auto" id="unassigned">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {unassignedWines.map((wine, index) => (
+                        <SortableWine key={wine.id} wine={wine} index={index} />
+                      ))}
+                    </div>
+                    {unassignedWines.length === 0 && (
+                      <div className="text-center text-gray-400 py-4">
+                        All wines assigned
+                      </div>
+                    )}
+                  </div>
                 </SortableContext>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
+
+            {/* Rounds - Stack vertically on mobile, grid on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {rounds.map((roundWines, roundIndex) => (
+                <div key={roundIndex} id={`round-${roundIndex}`}>
+                  <SortableContext 
+                    items={roundWines.map(w => w.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <RoundCard
+                      round={roundIndex}
+                      wines={roundWines}
+                      onDrop={() => {}}
+                      bottlesPerRound={bottlesPerRound}
+                    />
+                  </SortableContext>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="text-center pt-6">
+          <div className="text-center pt-6 pb-4">
             <Button
               onClick={handleFinalize}
               disabled={finalizeMutation.isPending}
               size="lg"
-              className="px-8 py-3"
+              className="px-6 py-3 w-full md:w-auto"
             >
               {finalizeMutation.isPending ? "Finalizing..." : "🎯 Finalize Rounds & Start Game"}
             </Button>
