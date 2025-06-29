@@ -64,7 +64,7 @@ export default function Home() {
 
           <div className="text-center">
             <div className="mb-4">
-              <BarChart3 className="h-12 w-12 mx-auto text-[#3B82F6]" />
+              <div className="text-5xl">🔢</div>
             </div>
             <h3 className="font-semibold text-lg mb-2 text-gray-900">Live Ranking</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -77,7 +77,7 @@ export default function Home() {
 
           <div className="text-center">
             <div className="mb-4">
-              <CheckCircle2 className="h-12 w-12 mx-auto text-[#10B981]" />
+              <div className="text-5xl">✅</div>
             </div>
             <h3 className="font-semibold text-lg mb-2 text-gray-900">Smart Scoring</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -90,7 +90,7 @@ export default function Home() {
 
           <div className="text-center">
             <div className="mb-4">
-              <Trophy className="h-12 w-12 mx-auto text-[#F59E0B]" />
+              <div className="text-5xl">🥇</div>
             </div>
             <h3 className="font-semibold text-lg mb-2 text-gray-900">Compete & Win</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -112,17 +112,17 @@ export default function Home() {
           </span>
           <span>→</span>
           <span className="flex items-center">
-            <BarChart3 className="h-4 w-4 mr-2 text-[#3B82F6]" />
+            <span className="mr-2 text-[#3B82F6]">🔢</span>
             Rank
           </span>
           <span>→</span>
           <span className="flex items-center">
-            <CheckCircle2 className="h-4 w-4 mr-2 text-[#10B981]" />
+            <span className="mr-2 text-[#10B981]">✅</span>
             Score
           </span>
           <span>→</span>
           <span className="flex items-center">
-            <Trophy className="h-4 w-4 mr-2 text-[#F59E0B]" />
+            <span className="mr-2 text-[#F59E0B]">🥇</span>
             Win
           </span>
         </div>
