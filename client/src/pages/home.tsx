@@ -132,7 +132,7 @@ export default function Home() {
         </Card>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>🍷  Taste • Rank • Score • Win  🏆</p>
+          <p>🍷 Sip • 🔢 Rank • ✅ Score • 🥇 Win</p>
         </div>
         </div>
       </div>
