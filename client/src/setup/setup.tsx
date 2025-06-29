@@ -717,9 +717,7 @@ export default function Setup() {
 
           {selectedConfig && bottles.length === selectedConfig.bottles && (
             <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Ready to start! Your wines are saved and ready to organize into rounds.
-              </p>
+              <p className="text-sm text-gray-600">Once you save, you can’t go back. Make sure everything looks right before continuing.</p>
             </div>
           )}
         </CardContent>
