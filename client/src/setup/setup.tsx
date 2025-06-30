@@ -154,20 +154,44 @@ export default function Setup() {
       };
       
       if (isNewGame) {
+        console.log('Creating new game with displayName:', hostName);
         // First create the game
-        const gameRes = await apiRequest("POST", "/api/games", {
-          displayName: hostName || "Host",
+        const gameRes = await fetch(`http://localhost:3000/api/games`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            displayName: hostName || "Host"
+          })
         });
+
+        if (!gameRes.ok) {
+          const error = await gameRes.text();
+          throw new Error(`Failed to create game: ${error}`);
+        }
+        
         const gameData = await gameRes.json();
+        console.log('Game created:', gameData);
         
         // Store the tokens for future use
         sessionStorage.setItem(`game-${gameData.game.id}-hostToken`, gameData.hostToken);
         sessionStorage.setItem("hostToken", gameData.hostToken);
         
         // Then apply configuration to the new game
-        const configRes = await apiRequest("POST", `/api/games/${gameData.game.id}/config`, configData, {
-          headers: { Authorization: `Bearer ${gameData.hostToken}` },
+        const configRes = await fetch(`http://localhost:3000/api/games/${gameData.game.id}/config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${gameData.hostToken}`
+          },
+          body: JSON.stringify(configData)
         });
+
+        if (!configRes.ok) {
+          const error = await configRes.text();
+          throw new Error(`Failed to save config: ${error}`);
+        }
         
         // Update the URL to include the gameId
         setLocation(`/setup/${gameData.game.id}`);
@@ -175,9 +199,20 @@ export default function Setup() {
         return { game: gameData.game, config: await configRes.json() };
       } else {
         // Existing flow for games that already exist
-        const res = await apiRequest("POST", `/api/games/${gameId}/config`, configData, {
-          headers: { Authorization: `Bearer ${hostToken}` },
+        const res = await fetch(`http://localhost:3000/api/games/${gameId}/config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${hostToken}`
+          },
+          body: JSON.stringify(configData)
         });
+
+        if (!res.ok) {
+          const error = await res.text();
+          throw new Error(`Failed to update config: ${error}`);
+        }
+        
         return res.json();
       }
     },
@@ -339,7 +374,10 @@ export default function Setup() {
   };
 
   const handleConfigSave = () => {
+    console.log('handleConfigSave called');
+    
     if (!selectedConfig) {
+      console.log('No config selected');
       toast({
         title: "Error",
         description: "Please select a game configuration.",
@@ -350,7 +388,9 @@ export default function Setup() {
 
     // Validate required fields for new games
     if (isNewGame) {
+      console.log('Validating new game fields');
       if (!hostName.trim()) {
+        console.log('Host name is required');
         toast({
           title: "Error",
           description: "Please enter your name.",
@@ -360,6 +400,7 @@ export default function Setup() {
       }
 
       if (!hostEmail.trim()) {
+        console.log('Host email is required');
         toast({
           title: "Error",
           description: "Please enter your email.",
@@ -371,6 +412,7 @@ export default function Setup() {
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(hostEmail)) {
+        console.log('Invalid email format');
         toast({
           title: "Error",
           description: "Please enter a valid email address.",
@@ -380,6 +422,8 @@ export default function Setup() {
       }
     }
     
+    console.log('All validations passed, saving config...');
+    
     // Check if we need to save or just move forward
     const existingGame = gameData?.game;
     const configChanged = !existingGame?.totalBottles || 
@@ -388,8 +432,10 @@ export default function Setup() {
                          existingGame.totalRounds !== selectedConfig.rounds;
     
     if (configChanged) {
+      console.log('Configuration changed, saving...');
       saveConfigMutation.mutate(selectedConfig);
     } else {
+      console.log('No configuration changes, moving to wine entry');
       // Configuration hasn't changed, just move to wine entry
       setConfigurationStep('wines');
     }
