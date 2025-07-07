@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 
 import { Button } from "@/common/ui/button";
-import { Trophy, BarChart3, CheckCircle2 } from "lucide-react";
+
 import WineyHeader from "@/common/winey-header";
 
 export default function Home() {

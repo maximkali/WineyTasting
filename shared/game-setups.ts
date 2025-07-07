@@ -24,6 +24,8 @@ export const wineySetups: GameSetup[] = [
 ];
 
 export interface GameSetupOption {
+  id: string;
+  label: string;
   players: number;
   bottles: number;
   rounds: number;
@@ -46,20 +48,19 @@ export function getBottleOptionsForPlayers(playerCount: number): GameSetupOption
   const uniqueBottles = new Map<number, GameSetupOption>();
   
   // For each option, only keep the one with the most rounds (most tastings)
-  allOptions.forEach(option => {
+  allOptions.forEach((option, index) => {
     const bottles = option[1];
-    const existing = uniqueBottles.get(bottles);
-    
-    // If we haven't seen this bottle count yet, or if this one has more rounds
-    if (!existing || option[2] > existing.rounds) {
-      const [players, bottles, rounds, bottlesPerRound, bottleEqPerPerson, ozPerPersonPerBottle] = option;
+    const id = `option-${playerCount}-${bottles}-${index}`;
+    if (!uniqueBottles.has(bottles) || (uniqueBottles.get(bottles)?.rounds || 0) < option[2]) {
       uniqueBottles.set(bottles, {
-        players,
-        bottles,
-        rounds,
-        bottlesPerRound,
-        bottleEqPerPerson,
-        ozPerPersonPerBottle,
+        id,
+        label: `${option[1]} bottles (${option[2]} rounds)`,
+        players: option[0],
+        bottles: option[1],
+        rounds: option[2],
+        bottlesPerRound: option[3],
+        bottleEqPerPerson: option[4],
+        ozPerPersonPerBottle: option[5],
       });
     }
   });
@@ -70,15 +71,18 @@ export function getBottleOptionsForPlayers(playerCount: number): GameSetupOption
 }
 
 export function getRoundOptions(playerCount: number, bottleCount: number): GameSetupOption[] {
-  const options = wineySetups
-    .filter(([players, bottles, rounds]) => players === playerCount && bottles === bottleCount && rounds > 0)
-    .map(([players, bottles, rounds, bottlesPerRound, bottleEqPerPerson, ozPerPersonPerBottle]) => ({
-      players,
-      bottles,
-      rounds,
-      bottlesPerRound,
-      bottleEqPerPerson,
-      ozPerPersonPerBottle,
-    }));
-  return options.sort((a, b) => b.rounds - a.rounds);
+  // Get all options that match both player and bottle count, sorted by rounds descending
+  return wineySetups
+    .filter(([players, bottles]) => players === playerCount && bottles === bottleCount)
+    .map((option, index) => ({
+      id: `round-${playerCount}-${bottleCount}-${index}`,
+      label: `${option[2]} rounds (${option[3]} bottles/round)`,
+      players: option[0],
+      bottles: option[1],
+      rounds: option[2],
+      bottlesPerRound: option[3],
+      bottleEqPerPerson: option[4],
+      ozPerPersonPerBottle: option[5],
+    }))
+    .sort((a, b) => b.rounds - a.rounds); // Sort by rounds descending
 }

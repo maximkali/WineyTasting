@@ -45,8 +45,14 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Games
   async createGame(game: InsertGame): Promise<Game> {
-    const [newGame] = await db.insert(games).values(game).returning();
-    return newGame;
+    // Ensure status is a valid game status
+    const typedGame = {
+      ...game,
+      status: (game.status || 'setup') as 'setup' | 'lobby' | 'in_round' | 'countdown' | 'reveal' | 'gambit' | 'final'
+    } satisfies typeof games.$inferInsert;
+    
+    const [newGame] = await db.insert(games).values(typedGame).returning();
+    return newGame as Game;
   }
 
   async getGame(id: string): Promise<Game | undefined> {
@@ -88,8 +94,14 @@ export class DatabaseStorage implements IStorage {
 
   // Players
   async createPlayer(player: InsertPlayer): Promise<Player> {
-    const [newPlayer] = await db.insert(players).values(player).returning();
-    return newPlayer;
+    // Ensure status is a valid player status
+    const typedPlayer = {
+      ...player,
+      status: (player.status || 'active') as 'active' | 'kicked'
+    } satisfies typeof players.$inferInsert;
+    
+    const [newPlayer] = await db.insert(players).values(typedPlayer).returning();
+    return newPlayer as Player;
   }
 
   async getPlayersByGame(gameId: string): Promise<Player[]> {
@@ -112,8 +124,23 @@ export class DatabaseStorage implements IStorage {
 
   // Rounds
   async createRounds(roundList: InsertRound[]): Promise<Round[]> {
-    const createdRounds = await db.insert(rounds).values(roundList).returning();
-    return createdRounds;
+    // Ensure bottleIds is properly typed as string[]
+    const typedRounds = roundList.map(round => {
+      // Convert bottleIds to a proper string array if it's not already
+      const bottleIds = Array.isArray(round.bottleIds) 
+        ? round.bottleIds 
+        : typeof round.bottleIds === 'object' && round.bottleIds !== null
+          ? Object.values(round.bottleIds).filter((v): v is string => typeof v === 'string')
+          : [];
+          
+      return {
+        ...round,
+        bottleIds: bottleIds
+      } satisfies typeof rounds.$inferInsert;
+    });
+    
+    const createdRounds = await db.insert(rounds).values(typedRounds).returning();
+    return createdRounds as Round[];
   }
 
   async getRoundsByGame(gameId: string): Promise<Round[]> {
@@ -131,8 +158,21 @@ export class DatabaseStorage implements IStorage {
 
   // Submissions
   async createSubmission(submission: InsertSubmission): Promise<Submission> {
-    const [newSubmission] = await db.insert(submissions).values(submission).returning();
-    return newSubmission;
+    // Ensure ranking is properly typed as string[]
+    const ranking = Array.isArray(submission.ranking) 
+      ? submission.ranking 
+      : typeof submission.ranking === 'object' && submission.ranking !== null
+        ? Object.values(submission.ranking).filter((v): v is string => typeof v === 'string')
+        : [];
+        
+    const typedSubmission = {
+      ...submission,
+      ranking: ranking,
+      tastingNotes: submission.tastingNotes || {}
+    } satisfies typeof submissions.$inferInsert;
+    
+    const [newSubmission] = await db.insert(submissions).values(typedSubmission).returning();
+    return newSubmission as Submission;
   }
 
   async getSubmissionsByRound(gameId: string, roundIndex: number): Promise<Submission[]> {

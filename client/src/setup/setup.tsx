@@ -5,20 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Input } from "@/common/ui/input";
 import { Label } from "@/common/ui/label";
 import { Badge } from "@/common/ui/badge";
-import { Separator } from "@/common/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/common/ui/select";
-import { Trash2, Settings, Users, Wine, RotateCcw, Plus, Save } from "lucide-react";
+import { Trash2, Wine } from "lucide-react";
 import WineyHeader from "@/common/winey-header";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/common/lib/queryClient";
 import { useToast } from "@/common/hooks/use-toast";
-import { useGame } from "@/common/hooks/use-game";
 import { 
   getUniquePlayerCounts, 
   getBottleOptionsForPlayers, 
   getRoundOptions,
   type GameSetupOption 
 } from "@shared/game-setups";
+import { Bottle } from "./types";
+import { GameResponse } from "@shared/types";
 
 export default function Setup() {
   const { gameId } = useParams();
@@ -33,14 +33,14 @@ export default function Setup() {
   const hostToken = gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null;
   
   // Only fetch from API if not a new game
-  const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery({
+  const { data: gameData, isLoading: gameLoading } = useQuery<GameResponse>({
     queryKey: [`/api/games/${gameId}`],
     enabled: !isNewGame && !!gameId && !!hostToken,
     refetchInterval: 5000,
   });
 
   // Fetch existing bottles for the game
-  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+  const { data: bottlesData, isLoading: bottlesLoading } = useQuery<{ bottles: Bottle[] }>({
     queryKey: [`/api/games/${gameId}/bottles`],
     enabled: !!gameId && !!hostToken && !!gameData?.game,
     queryFn: async () => {
@@ -61,24 +61,48 @@ export default function Setup() {
   const [selectedConfig, setSelectedConfig] = useState<GameSetupOption | null>(null);
   
   // Wine entry state
-  const [bottles, setBottles] = useState<{ labelName: string; funName: string; price: string }[]>([]);
+  const [bottles, setBottles] = useState<Bottle[]>([]);
   const [configurationStep, setConfigurationStep] = useState<'config' | 'wines'>('config');
+  
+  // Initialize with default config if new game
+  useEffect(() => {
+    if (isNewGame) {
+      setSelectedPlayers(8); // Default to 8 players
+      setSelectedBottles(8); // Default to 8 bottles
+    }
+  }, [isNewGame]);
 
   // Get available options
   const playerOptions = getUniquePlayerCounts();
   const bottleOptions = selectedPlayers ? getBottleOptionsForPlayers(selectedPlayers) : [];
-  const roundOptions = selectedPlayers && selectedBottles ? getRoundOptions(selectedPlayers, selectedBottles) : [];
-  
+  const roundOptions = selectedPlayers && selectedBottles 
+    ? getRoundOptions(selectedPlayers, selectedBottles) 
+    : [];
+    
+  // Update selected config when round options change
+  useEffect(() => {
+    if (roundOptions.length > 0 && !selectedConfig) {
+      setSelectedConfig(roundOptions[0]);
+    }
+  }, [roundOptions, selectedConfig]);
+
   useEffect(() => {
     if (selectedPlayers && selectedBottles) {
       const options = getRoundOptions(selectedPlayers, selectedBottles);
       if (options.length > 0) {
-        setSelectedConfig(options[0]); // Auto-select the option with most rounds
+        const validConfig = options[0];
+        if (validConfig) {
+          setSelectedConfig({
+            ...validConfig,
+            bottleEqPerPerson: Number(validConfig.bottleEqPerPerson) || 0,
+            ozPerPersonPerBottle: Number(validConfig.ozPerPersonPerBottle) || 0
+          });
+        }
       } else {
-        setSelectedConfig(null); // Clear selection if no options available
+        setSelectedConfig(null);
       }
     } else {
-      setSelectedConfig(null); // Clear when players or bottles not selected
+      setSelectedConfig(null);
     }
   }, [selectedPlayers, selectedBottles]);
 
@@ -111,29 +135,28 @@ export default function Setup() {
         
         setSelectedPlayers(game.maxPlayers);
         setSelectedBottles(game.totalBottles);
-        const config = {
-          players: game.maxPlayers,
-          bottles: game.totalBottles,
-          rounds: game.totalRounds,
-          bottlesPerRound: game.bottlesPerRound,
-          bottleEqPerPerson: game.bottleEqPerPerson || 0,
-          ozPerPersonPerBottle: game.ozPerPersonPerBottle || 0
+        const config: GameSetupOption = {
+          id: `game-${gameId}-config`,
+          label: `Game Configuration (${game.totalBottles} bottles, ${game.totalRounds} rounds)`,
+          players: game.maxPlayers || 0,
+          bottles: game.totalBottles || 0,
+          rounds: game.totalRounds || 0,
+          bottlesPerRound: game.bottlesPerRound || 0,
+          bottleEqPerPerson: Number(game.bottleEqPerPerson) || 0,
+          ozPerPersonPerBottle: Number(game.ozPerPersonPerBottle) || 0
         };
 
         setSelectedConfig(config);
         
-        // Load existing bottles data
+        // Load existing bottles data but stay on config step
         if (bottlesData.bottles.length > 0) {
-
           const existingBottles = bottlesData.bottles.map((bottle: any) => ({
             labelName: bottle.labelName || "",
             funName: bottle.funName || "",
-            price: (bottle.price / 100).toString() // Convert from cents back to dollars
+            price: (bottle.price / 100).toString()
           }));
 
           setBottles(existingBottles);
-          // Always show wine entry form when bottles exist
-          setConfigurationStep('wines');
         }
       }
     }
@@ -149,69 +172,54 @@ export default function Setup() {
         bottlesPerRound: config.bottlesPerRound,
         bottleEqPerPerson: config.bottleEqPerPerson,
         ozPerPersonPerBottle: config.ozPerPersonPerBottle,
-        hostName: hostName,
+        hostName: hostName || 'Host',  // Ensure we always have a host name
         hostEmail: hostEmail,
       };
       
       if (isNewGame) {
         console.log('Creating new game with displayName:', hostName);
-        // First create the game
-        const gameRes = await fetch(`http://localhost:3000/api/games`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            displayName: hostName || "Host"
-          })
+        // First create the game with required displayName
+        const gameRes = await apiRequest('POST', '/api/games', {
+          displayName: hostName || 'Host'
         });
-
+        
         if (!gameRes.ok) {
           const error = await gameRes.text();
-          throw new Error(`Failed to create game: ${error}`);
+          console.error('Failed to create game:', error);
+          throw new Error(error || 'Failed to create game');
         }
         
         const gameData = await gameRes.json();
         console.log('Game created:', gameData);
         
-        // Store the tokens for future use
-        sessionStorage.setItem(`game-${gameData.game.id}-hostToken`, gameData.hostToken);
-        sessionStorage.setItem("hostToken", gameData.hostToken);
-        
-        // Then apply configuration to the new game
-        const configRes = await fetch(`http://localhost:3000/api/games/${gameData.game.id}/config`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${gameData.hostToken}`
-          },
-          body: JSON.stringify(configData)
-        });
-
-        if (!configRes.ok) {
-          const error = await configRes.text();
-          throw new Error(`Failed to save config: ${error}`);
+        if (!gameData.game || !gameData.game.id) {
+          throw new Error('Invalid game data received from server');
         }
         
-        // Update the URL to include the gameId
+        // Store the tokens for future use
+        sessionStorage.setItem(`game-${gameData.game.id}-hostToken`, gameData.hostToken);
+        sessionStorage.setItem(`game-${gameData.game.id}-playerId`, gameData.playerId);
+        sessionStorage.setItem('hostToken', gameData.hostToken);
+        
+        // Update the URL to include the gameId before proceeding
         setLocation(`/setup/${gameData.game.id}`);
+        
+        // Then apply configuration to the new game
+        const configRes = await apiRequest('POST', `/api/games/${gameData.game.id}/config`, configData, {
+          headers: { Authorization: `Bearer ${gameData.hostToken}` }
+        });
+        
+        if (!configRes.ok) {
+          const error = await configRes.text();
+          throw new Error(`Failed to save game config: ${error}`);
+        }
         
         return { game: gameData.game, config: await configRes.json() };
       } else {
         // Existing flow for games that already exist
-        const res = await fetch(`http://localhost:3000/api/games/${gameId}/config`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${hostToken}`
-          },
-          body: JSON.stringify(configData)
+        const res = await apiRequest('POST', `/api/games/${gameId}/config`, configData, {
+          headers: { Authorization: `Bearer ${hostToken}` }
         });
-
-        if (!res.ok) {
-          const error = await res.text();
-          throw new Error(`Failed to update config: ${error}`);
-        }
         
         return res.json();
       }
@@ -258,29 +266,6 @@ export default function Setup() {
       });
       // Navigate directly to rounds to organize wines
       setLocation(`/rounds/${gameId}`);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const randomizeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/games/${gameId}/randomize`, {}, {
-        headers: { Authorization: `Bearer ${hostToken}` },
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
-      toast({
-        title: "Success",
-        description: "Wines randomized into rounds!",
-      });
     },
     onError: (error) => {
       toast({
@@ -553,13 +538,16 @@ export default function Setup() {
             {/* Players Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm font-medium uppercase text-muted-foreground">
-                Number of Players:
+                Select Players:
               </Label>
-              <Select value={selectedPlayers?.toString()} onValueChange={(value) => {
-                setSelectedPlayers(parseInt(value));
-                setSelectedBottles(null);
-                setSelectedConfig(null);
-              }}>
+              <Select 
+                value={selectedPlayers?.toString() || ''} 
+                onValueChange={(value) => {
+                  setSelectedPlayers(parseInt(value));
+                  setSelectedBottles(null);
+                  setSelectedConfig(null);
+                }}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select players" />
                 </SelectTrigger>
@@ -576,14 +564,13 @@ export default function Setup() {
             {/* Bottles Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm font-medium uppercase text-muted-foreground">
-                Number of Bottles:
+                Select Bottles:
               </Label>
               <Select 
-                value={selectedBottles?.toString()} 
+                value={selectedBottles?.toString() || ''} 
                 onValueChange={(value) => {
                   setSelectedBottles(parseInt(value));
                 }}
-                disabled={!selectedPlayers}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select bottles" />
@@ -601,7 +588,7 @@ export default function Setup() {
             {/* Rounds Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm font-medium uppercase text-muted-foreground">
-                Number of Rounds:
+                Select Rounds:
               </Label>
               <Select 
                 value={selectedConfig?.rounds.toString()} 
@@ -613,7 +600,7 @@ export default function Setup() {
                     setSelectedConfig(matchingConfig);
                   }
                 }}
-                disabled={!selectedPlayers || !selectedBottles}
+
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select rounds" />

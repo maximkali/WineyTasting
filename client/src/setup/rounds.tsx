@@ -1,17 +1,44 @@
 import { useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Shuffle, Save, RotateCcw, Wine, ChevronRight, Plus, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Shuffle, RotateCcw, Plus, X } from "lucide-react";
 import { Button } from "@/common/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/common/ui/card";
 import { Badge } from "@/common/ui/badge";
+import { useToast } from "@/common/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/common/ui/dialog";
 import { Checkbox } from "@/common/ui/checkbox";
 import WineyHeader from "@/common/winey-header";
-import { toast, useToast } from "@/common/hooks/use-toast";
-import { queryClient, apiRequest } from "@/common/lib/queryClient";
-import { useGame } from "@/common/hooks/use-game";
+import { apiRequest } from "@/common/lib/queryClient";
 import { formatPrice } from "@/common/lib/game-utils";
+
+// Type definitions
+interface Bottle {
+  id: string;
+  labelName: string;
+  funName: string | null;
+  price: number;
+}
+
+interface GameData {
+  id: string;
+  maxPlayers: number;
+  totalBottles: number;
+  totalRounds: number;
+  bottlesPerRound: number;
+  bottleEqPerPerson: number;
+  ozPerPersonPerBottle: number;
+  roundsLocked?: boolean;
+  hostToken?: string;
+}
+
+interface GameResponse {
+  game: GameData;
+}
+
+interface BottlesResponse {
+  bottles: Bottle[];
+}
 
 interface Wine {
   id: string;
@@ -113,7 +140,7 @@ function RoundCard({ round, wines, bottlesPerRound, availableWines, onAddWines, 
           <p className="text-gray-400 text-sm text-center py-8">No wines assigned yet</p>
         ) : (
           <div className="space-y-1">
-            {wines.map((wine, index) => (
+            {wines.map((wine) => (
               <WineTile
                 key={wine.id}
                 wine={wine}
@@ -197,57 +224,48 @@ export default function Rounds() {
   const { gameId } = useParams<{ gameId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // State for wines and rounds
+  const [wines, setWines] = useState<Wine[]>([]);
+  const [rounds, setRounds] = useState<Wine[][]>([]);
 
   // Game data
-  const { data: gameData, isLoading: gameLoading, isError: gameError } = useGame(gameId!);
-  
-  // Get host token from session storage with fallback
-  const hostToken = gameId ? (
-    sessionStorage.getItem(`game-${gameId}-hostToken`) || 
-    sessionStorage.getItem("hostToken")
-  ) : null;
-  
-  // Use gameData hostToken as fallback if session storage doesn't have it
-  const finalHostToken = hostToken || gameData?.game?.hostToken;
-  
-  console.log('[DEBUG] Host token check:', {
-    gameId,
-    fromSessionSpecific: gameId ? sessionStorage.getItem(`game-${gameId}-hostToken`) : null,
-    fromSessionGeneral: sessionStorage.getItem("hostToken"),
-    fromGameData: gameData?.game?.hostToken,
-    finalToken: finalHostToken?.substring(0, 10) + '...'
+  const { data: gameData, isLoading: gameLoading, error: gameError } = useQuery<GameResponse>({
+    queryKey: [`/api/games/${gameId}`],
+    enabled: !!gameId,
   });
   
-  // Bottles data - read directly from database (no auth required for viewing)
-  const { data: bottlesData, isLoading: bottlesLoading } = useQuery({
+  // Bottles data
+  const { data: bottlesData, isLoading: bottlesLoading } = useQuery<BottlesResponse>({
     queryKey: [`/api/games/${gameId}/bottles`],
     enabled: !!gameId,
   });
   
-  // State for wines and rounds
-  const [wines, setWines] = useState<Wine[]>([]);
-  const [rounds, setRounds] = useState<Wine[][]>([]);
-  const [hasAutoAssigned, setHasAutoAssigned] = useState(false);
-  
-  // Load wines from database on mount
+  // Host token is no longer used in this component
+  // Initialize wines and rounds when data loads
   useEffect(() => {
     if (bottlesData?.bottles && gameData?.game) {
-      const wineData = bottlesData.bottles.map((bottle: any, index: number) => ({
+      const wineData: Wine[] = bottlesData.bottles.map((bottle: Bottle, index: number) => ({
         id: bottle.id,
         labelName: bottle.labelName,
         funName: bottle.funName,
-        price: bottle.price / 100, // Convert from cents
+        price: bottle.price / 100, // Convert from cents to dollars
         originalIndex: index
       }));
+      
       setWines(wineData);
       
       // Initialize rounds - check if bottles already have round assignments
       const totalRounds = gameData.game.totalRounds || 5;
-      const initialRounds = Array(totalRounds).fill(null).map(() => []);
+      const initialRounds: Wine[][] = Array(totalRounds).fill(null).map(() => []);
       
       // Populate rounds with existing assignments
-      bottlesData.bottles.forEach((bottle: any) => {
-        if (bottle.roundIndex !== null && bottle.roundIndex >= 0 && bottle.roundIndex < totalRounds) {
+      bottlesData.bottles.forEach((bottle: Bottle & { roundIndex?: number }) => {
+        if (bottle.roundIndex !== undefined && 
+            bottle.roundIndex !== null && 
+            bottle.roundIndex >= 0 && 
+            bottle.roundIndex < totalRounds) {
           const wine = wineData.find(w => w.id === bottle.id);
           if (wine) {
             initialRounds[bottle.roundIndex].push(wine);
@@ -266,6 +284,13 @@ export default function Rounds() {
   const assignedWineIds = new Set(rounds.flat().map(w => w.id));
   const unassignedWines = wines.filter(w => !assignedWineIds.has(w.id));
 
+  // Debug logging for session storage
+  useEffect(() => {
+    console.log('[DEBUG] Rounds - Game ID:', gameId);
+    console.log('[DEBUG] Rounds - Player ID from session:', sessionStorage.getItem(`game-${gameId}-playerId`));
+    console.log('[DEBUG] Rounds - Host Token from session:', sessionStorage.getItem(`game-${gameId}-hostToken`));
+  }, [gameId]);
+
   // Save rounds mutation - wines are already in database
   const saveRoundsMutation = useMutation({
     mutationFn: async () => {
@@ -274,36 +299,58 @@ export default function Rounds() {
       // Map round assignments using existing bottle IDs
       const roundData = rounds.map((roundWines, roundIndex) => ({
         roundIndex,
-        bottleIds: roundWines.map(wine => wine.id)
+        bottleIds: roundWines.map(wine => wine?.id).filter(Boolean) as string[]
       }));
       
       console.log('[DEBUG] Saving rounds data:', roundData);
       
-      // Organize rounds with bottle IDs (no auth required)
-      const organizeResponse = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { rounds: roundData });
+      // Make the API call to organize the bottles into rounds
+      const response = await apiRequest('POST', `/api/games/${gameId}/bottles/organize`, { 
+        rounds: roundData 
+      });
       
-      if (!organizeResponse.ok) {
-        throw new Error('Failed to organize rounds');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[DEBUG] Failed to organize bottles:', errorData);
+        throw new Error(errorData.error || 'Failed to organize bottles');
       }
       
-      return organizeResponse.json();
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] });
+    onSuccess: async (data) => {
+      console.log('[DEBUG] Rounds saved successfully:', data);
       
-      // Clear temporary wines from session storage
-      sessionStorage.removeItem(`game-${gameId}-tempWines`);
+      // Update the game data in the query cache with the response from the server
+      if (data.game) {
+        queryClient.setQueryData([`/api/games/${gameId}`], data.game);
+      }
+      
+      // Invalidate queries to ensure fresh data is fetched
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}/bottles`] })
+      ]);
+      
+      // Check if we have the required session data
+      const hostToken = sessionStorage.getItem(`game-${gameId}-hostToken`);
+      const playerId = sessionStorage.getItem(`game-${gameId}-playerId`);
+      
+      console.log('[DEBUG] Session data before navigation:', { 
+        hostToken: !!hostToken, 
+        playerId,
+        isHost: !!hostToken // If hostToken exists, this is the host
+      });
       
       toast({
         title: "Success",
         description: "Wines and rounds saved successfully!"
       });
       
-      // Navigate to lobby
-      navigate(`/lobby/${gameId}`);
+      // Navigate to the lobby with host status in the URL
+      navigate(`/lobby/${gameId}?host=${!!hostToken}`);
     },
     onError: (error: any) => {
+      console.error('[DEBUG] Error saving rounds:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to save wines and rounds.",
@@ -347,7 +394,6 @@ export default function Rounds() {
     }
     
     setRounds(newRounds);
-    setHasAutoAssigned(true);
     toast({
       title: "Auto-assigned wines",
       description: `Assigned ${wineIndex} wines to rounds.`
@@ -381,7 +427,6 @@ export default function Rounds() {
 
   const handleReset = () => {
     setRounds(Array(rounds.length).fill(null).map(() => []));
-    setHasAutoAssigned(false);
     toast({
       title: "Reset rounds",
       description: "All wines have been removed from rounds."
@@ -403,7 +448,7 @@ export default function Rounds() {
     }
     
     // Check if each round has the correct number
-    const incompleteRounds = rounds.filter((r, idx) => r.length !== bottlesPerRound);
+    const incompleteRounds = rounds.filter(r => r.length !== bottlesPerRound);
     if (incompleteRounds.length > 0) {
       toast({
         title: "Warning",
@@ -443,7 +488,10 @@ export default function Rounds() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">Organize Wines into Rounds</h1>
-          <p className="text-gray-600 text-sm">Assign your {wines.length} wines to {game.totalRounds} rounds ({game.bottlesPerRound} wines per round)</p>
+          <p className="text-gray-600 text-sm">
+            Assign your {wines.length} wines to {game?.totalRounds || 'N'} rounds 
+            ({game?.bottlesPerRound || 'X'} wines per round)
+          </p>
         </div>
 
         {/* Action buttons */}
@@ -495,7 +543,7 @@ export default function Rounds() {
               key={index}
               round={index}
               wines={round}
-              bottlesPerRound={game.bottlesPerRound || 4}
+              bottlesPerRound={game?.bottlesPerRound || 4}
               availableWines={unassignedWines}
               onAddWines={handleAddWines}
               onRemoveWine={handleRemoveWine}

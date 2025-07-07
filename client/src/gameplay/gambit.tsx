@@ -8,6 +8,36 @@ import { useToast } from "@/common/hooks/use-toast";
 import { useGame } from "@/common/hooks/use-game";
 import AdminPanel from "@/setup/admin-panel";
 
+interface Player {
+  id: string;
+  displayName: string;
+  isHost: boolean;
+  score: number;
+  status: 'active' | 'kicked';
+}
+
+interface Game {
+  id: string;
+  status: 'setup' | 'lobby' | 'in_round' | 'countdown' | 'reveal' | 'gambit' | 'final';
+  currentRound: number;
+  hostToken: string;
+}
+
+interface Bottle {
+  id: string;
+  labelName: string;
+  funName?: string;
+  price: number;
+  roundIndex?: number;
+  orderIndex: number;
+}
+
+interface GameData {
+  game: Game;
+  players: Player[];
+  bottles: Bottle[];
+}
+
 interface GambitSelections {
   mostExpensive: string | null;
   leastExpensive: string | null;
@@ -22,10 +52,16 @@ export default function Gambit() {
   
   const playerId = localStorage.getItem("playerId");
   const hostToken = localStorage.getItem("hostToken");
-  const isSpectator = !playerId;
+  
+  // Redirect to join if no player ID
+  useEffect(() => {
+    if (!playerId) {
+      setLocation(`/join/${gameId}`);
+    }
+  }, [playerId, gameId, setLocation]);
 
-  const { data: gameData, isLoading } = useGame(gameId!);
-  const isHost = gameData?.players.find(p => p.id === playerId)?.isHost || false;
+  const { data: gameData, isLoading } = useGame<GameData>(gameId!);
+  const isHost = gameData?.players?.find(p => p.id === playerId)?.isHost || false;
 
   const [selections, setSelections] = useState<GambitSelections>({
     mostExpensive: null,
@@ -37,10 +73,10 @@ export default function Gambit() {
 
   // Auto-redirect if game moves to final
   useEffect(() => {
-    if (gameData?.game.status === 'final') {
+    if (gameData?.game?.status === 'final') {
       setLocation(`/final/${gameId}`);
     }
-  }, [gameData?.game.status, gameId, setLocation]);
+  }, [gameData?.game?.status, gameId, setLocation]);
 
   const submitGambitMutation = useMutation({
     mutationFn: async (data: { mostExpensive: string; leastExpensive: string; favorite: string }) => {
@@ -95,39 +131,44 @@ export default function Gambit() {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || !gameData) {
     return (
       <div className="min-h-screen bg-warm-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">🍷</div>
-          <p className="text-gray-600">Loading Sommelier's Gambit...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!playerId) {
+    return null; // Will be redirected by the effect
+  }
+
+  if (!gameData.game) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">❌</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Game Not Found
+          </h1>
+          <p className="text-gray-600 mb-4">
+            The game you're looking for doesn't exist or has ended.
+          </p>
+          <Button onClick={() => setLocation("/")} className="wine-gradient text-white">
+            🍷 Return Home
+          </Button>
         </div>
       </div>
     );
   }
 
-  if (!gameData?.game) {
-    return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <div className="text-4xl mb-4">❌</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Game Not Found
-            </h1>
-            <Button onClick={() => setLocation("/")} className="wine-gradient text-white">
-              🍷 Return Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const { bottles } = gameData;
+  const { game, bottles } = gameData as GameData;
 
   const handleSelection = (selectionType: keyof GambitSelections, bottleId: string) => {
-    if (hasSubmitted || isSpectator) return;
+    if (hasSubmitted) return;
 
     setSelections(prev => ({
       ...prev,
@@ -136,7 +177,7 @@ export default function Gambit() {
   };
 
   const canSubmit = () => {
-    if (hasSubmitted || isSpectator) return false;
+    if (hasSubmitted) return false;
     
     const { mostExpensive, leastExpensive, favorite } = selections;
     return mostExpensive && leastExpensive && favorite && mostExpensive !== leastExpensive;
@@ -221,7 +262,7 @@ export default function Gambit() {
           </CardContent>
         </Card>
 
-        {hasSubmitted && !isSpectator && (
+        {hasSubmitted && (
           <Card className="mb-6 bg-sage border-wine">
             <CardContent className="p-4 text-center">
               <div className="text-2xl mb-2">✅</div>
@@ -234,65 +275,50 @@ export default function Gambit() {
         )}
 
         {/* Gambit Selections */}
-        {!isSpectator && (
-          <div className="space-y-6">
-            {selectionTypes.map((selectionType) => (
-              <Card key={selectionType.key}>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">{selectionType.title}</h2>
-                  <p className="text-gray-600 mb-4">{selectionType.description}</p>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {bottles.map((bottle: any) => (
-                      <div
-                        key={bottle.id}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors border-2 ${
-                          selections[selectionType.key] === bottle.id
-                            ? "bg-gold-gradient border-wine"
-                            : hasSubmitted
-                            ? "bg-gray-100 border-gray-200 cursor-not-allowed"
-                            : "bg-gray-50 border-transparent hover:bg-rose hover:border-wine"
-                        }`}
-                        onClick={() => handleSelection(selectionType.key, bottle.id)}
-                      >
-                        <div className="font-medium text-sm">
-                          {bottle.funName || bottle.labelName}
-                        </div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          Round {(bottle.roundIndex || 0) + 1}
-                        </div>
+        <div className="space-y-6">
+          {selectionTypes.map((selectionType) => (
+            <Card key={selectionType.key}>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4">{selectionType.title}</h2>
+                <p className="text-gray-600 mb-4">{selectionType.description}</p>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {bottles.map((bottle: any) => (
+                    <div
+                      key={bottle.id}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors border-2 ${
+                        selections[selectionType.key] === bottle.id
+                          ? "bg-gold-gradient border-wine"
+                          : hasSubmitted
+                          ? "bg-gray-100 border-gray-200 cursor-not-allowed"
+                          : "bg-gray-50 border-transparent hover:bg-rose hover:border-wine"
+                      }`}
+                      onClick={() => handleSelection(selectionType.key, bottle.id)}
+                    >
+                      <div className="font-medium text-sm">
+                        {bottle.funName || bottle.labelName}
                       </div>
-                    ))}
-                  </div>
-                  
-                  {selections[selectionType.key] && (
-                    <div className="mt-4 p-3 bg-gold-gradient rounded-lg border-2 border-wine">
-                      <div className="font-medium">
-                        Selected: <strong>{getSelectionName(selections[selectionType.key])}</strong>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Round {(bottle.roundIndex || 0) + 1}
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Spectator View */}
-        {isSpectator && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl mb-4">👀</div>
-              <h3 className="text-lg font-semibold mb-2">Spectator Mode</h3>
-              <p className="text-gray-600">
-                Players are making their final predictions in the Sommelier's Gambit.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                </div>
+                
+                {selections[selectionType.key] && (
+                  <div className="mt-4 p-3 bg-gold-gradient rounded-lg border-2 border-wine">
+                    <div className="font-medium">
+                      Selected: <strong>{getSelectionName(selections[selectionType.key])}</strong>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Submit Button */}
-        {!isSpectator && !hasSubmitted && (
+        {!hasSubmitted && (
           <Card className="mt-6">
             <CardContent className="p-6">
               <div className="space-y-4">

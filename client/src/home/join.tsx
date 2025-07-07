@@ -7,6 +7,7 @@ import { Label } from "@/common/ui/label";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/common/lib/queryClient";
 import { useToast } from "@/common/hooks/use-toast";
+import { GameResponse, JoinGameResponse } from "@shared/types";
 
 export default function Join() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -14,29 +15,23 @@ export default function Join() {
   const [playerName, setPlayerName] = useState("");
   const { toast } = useToast();
 
-  const { data: gameData, isLoading } = useQuery({
+  const { data: gameData, isLoading } = useQuery<GameResponse>({
     queryKey: [`/api/games/${gameId}`],
     enabled: !!gameId,
   });
 
-  const joinGameMutation = useMutation({
-    mutationFn: async (displayName?: string) => {
+  const joinGameMutation = useMutation<JoinGameResponse, Error, string>({
+    mutationFn: async (displayName: string) => {
       const res = await apiRequest("POST", `/api/games/${gameId}/join`, {
         displayName,
       });
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.spectator) {
-        // Spectator mode
-        localStorage.removeItem("playerId");
-        setLocation(`/lobby/${gameId}`);
-      } else {
-        localStorage.setItem("playerId", data.player.id);
-        setLocation(`/lobby/${gameId}`);
-      }
+      localStorage.setItem("playerId", data.player.id);
+      setLocation(`/lobby/${gameId}`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to join game. Please try again.",
@@ -57,10 +52,6 @@ export default function Join() {
     joinGameMutation.mutate(playerName.trim());
   };
 
-  const handleSpectate = () => {
-    joinGameMutation.mutate();
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-warm-white flex items-center justify-center">
@@ -72,7 +63,7 @@ export default function Join() {
     );
   }
 
-  if (!gameData?.game) {
+  if (!gameData) {
     return (
       <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -158,24 +149,6 @@ export default function Join() {
                 className="w-full wine-gradient text-white py-3 rounded-full text-lg font-medium hover:opacity-90 transition-opacity"
               >
                 {joinGameMutation.isPending ? "Joining..." : "🍷 Join Game"}
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">or</span>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleSpectate}
-                disabled={joinGameMutation.isPending}
-                variant="outline"
-                className="w-full border-wine text-wine hover:bg-rose"
-              >
-                👀 Watch as Spectator
               </Button>
             </div>
           </CardContent>

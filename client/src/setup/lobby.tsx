@@ -1,45 +1,139 @@
 import { useEffect } from "react";
-import { useLocation, useParams } from "wouter";
+import { useParams, useSearch, useLocation } from "wouter";
 import { Button } from "@/common/ui/button";
 import { Card, CardContent } from "@/common/ui/card";
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/common/lib/queryClient";
 import { useToast } from "@/common/hooks/use-toast";
 import { useGame } from "@/common/hooks/use-game";
 import AdminPanel from "@/setup/admin-panel";
+import { GameResponse } from "@shared/types";
 
 export default function Lobby() {
   const { gameId } = useParams<{ gameId: string }>();
-  const [, setLocation] = useLocation();
+  const [search] = useSearch();
+  const [, navigate] = useLocation();
+  const isHostFromUrl = search.includes('host=true');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: gameData, isLoading } = useGame(gameId!);
+  const { 
+    data: gameData, 
+    isLoading, 
+    error: gameError,
+    refetch: refetchGame 
+  } = useGame<GameResponse>(gameId!);
+  
+  // Log game data changes
+  useEffect(() => {
+    if (gameError) {
+      console.error(`[Lobby] Error loading game ${gameId}:`, gameError);
+    }
+    if (gameData) {
+      console.log(`[Lobby] Successfully loaded game ${gameId}:`, gameData);
+    }
+  }, [gameData, gameError, gameId]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[DEBUG] Lobby - Game Data:', gameData);
+    console.log('[DEBUG] Lobby - Game ID:', gameId);
+    console.log('[DEBUG] Lobby - Player ID from session:', sessionStorage.getItem(`game-${gameId}-playerId`));
+    console.log('[DEBUG] Lobby - Host Token from session:', sessionStorage.getItem(`game-${gameId}-hostToken`));
+    
+    if (gameError) {
+      console.error('[ERROR] Error loading game data:', gameError);
+    }
+  }, [gameData, gameId, gameError]);
+  
+  // Add a retry mechanism if game data fails to load
+  useEffect(() => {
+    if (gameError && !isLoading) {
+      console.log('[DEBUG] Attempting to refetch game data...');
+      const retryTimer = setTimeout(() => {
+        refetchGame();
+      }, 1000);
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [gameError, isLoading, refetchGame]);
+
+  // Get host token and player ID from session storage
   const hostToken = sessionStorage.getItem(`game-${gameId}-hostToken`);
   const playerId = sessionStorage.getItem(`game-${gameId}-playerId`);
-  const isHost = gameData?.players.find(p => p.id === playerId)?.isHost || false;
-  const isSpectator = !playerId;
+  
+  // Determine host status
+  const isHost = isHostFromUrl || 
+                gameData?.players?.find((p) => p.id === playerId)?.isHost || 
+                false;
+  // Ensure player is logged in
+  useEffect(() => {
+    if (!playerId) {
+      navigate(`/join/${gameId}`);
+    }
+  }, [playerId, gameId, navigate]);
 
   // Auto-redirect if game starts
   useEffect(() => {
-    if (gameData?.game.status === 'in_round') {
-      setLocation(`/round/${gameId}/0`);
+    if (gameData?.game?.status === 'in_round') {
+      navigate(`/round/${gameId}/0`);
     }
-  }, [gameData?.game.status, gameId, setLocation]);
+  }, [gameData?.game?.status, gameId, navigate]);
+
+  if (isLoading || !gameData) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wine mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading game data...</p>
+          {gameError && (
+            <p className="text-red-500 mt-2">
+              Error loading game. Retrying...
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to join if no player ID
+  if (!playerId) {
+    navigate(`/join/${gameId}`);
+    return null;
+  }
 
   const startGameMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/games/${gameId}/start`, {}, {
-        headers: { Authorization: `Bearer ${hostToken}` },
-      });
-      return res.json();
+      try {
+        console.log('[DEBUG] Starting game with:', { 
+          gameId, 
+          hasHostToken: !!hostToken,
+          isHost,
+          playerId
+        });
+        
+        const res = await apiRequest("POST", `/api/games/${gameId}/start`, {}, {
+          headers: { Authorization: `Bearer ${hostToken}` },
+        });
+        
+        if (!res.ok) {
+          const error = await res.text();
+          console.error('[ERROR] Failed to start game:', error);
+          throw new Error(error);
+        }
+        
+        return res.json();
+      } catch (error) {
+        console.error('[ERROR] Start game mutation failed:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log('[DEBUG] Game started successfully');
       queryClient.invalidateQueries({ queryKey: [`/api/games/${gameId}`] });
-      setLocation(`/round/${gameId}/0`);
+      navigate(`/round/${gameId}/0`);
     },
     onError: (error: any) => {
+      console.error('[ERROR] Start game failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to start game",
@@ -48,16 +142,7 @@ export default function Lobby() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🍷</div>
-          <p className="text-gray-600">Loading game...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (!gameData?.game) {
     return (
@@ -68,7 +153,7 @@ export default function Lobby() {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Game Not Found
             </h1>
-            <Button onClick={() => setLocation("/")} className="wine-gradient text-white">
+            <Button onClick={() => navigate("/")} className="wine-gradient text-white">
               🍷 Return Home
             </Button>
           </CardContent>
@@ -77,8 +162,12 @@ export default function Lobby() {
     );
   }
 
-  const { game, players } = gameData;
-  const activePlayers = players.filter(p => p.status === 'active');
+  const { game, players } = gameData as GameResponse;
+  const activePlayers = players.filter((p) => p.status === 'active');
+  
+  // Calculate game setup progress
+  const totalBottles = game.totalBottles || 0;
+  const totalRounds = game.totalRounds || 0;
 
   return (
     <div className="min-h-screen bg-warm-white">
@@ -98,10 +187,30 @@ export default function Lobby() {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Lobby</h2>
+              <h2 className="text-xl font-semibold">Lobby - {game.hostName}'s Game</h2>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">Waiting to start</span>
+                <span className="text-sm text-gray-600">
+                  {isHost ? 'You are the host' : 'Waiting for host to start'}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Players</p>
+                <p className="text-lg font-semibold">{activePlayers.length}/{game.maxPlayers || 20}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Bottles</p>
+                <p className="text-lg font-semibold">{totalBottles} of {game.totalBottles || 0}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Rounds</p>
+                <p className="text-lg font-semibold">{totalRounds}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-500">Pours</p>
+                <p className="text-lg font-semibold">{game.ozPerPersonPerBottle ? Number(game.ozPerPersonPerBottle).toFixed(1) : '0.0'} oz</p>
               </div>
             </div>
             
@@ -158,27 +267,25 @@ export default function Lobby() {
               </div>
             )}
 
-            {!isSpectator && (
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Invite friends with game code: <strong>{gameId}</strong>
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const gameUrl = `${window.location.origin}/join/${gameId}`;
-                    navigator.clipboard.writeText(gameUrl);
-                    toast({
-                      title: "Link Copied!",
-                      description: "Game link copied to clipboard",
-                    });
-                  }}
-                  className="mt-2 border-wine text-wine hover:bg-rose"
-                >
-                  📋 Copy Game Link
-                </Button>
-              </div>
-            )}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Invite friends with game code: <strong>{gameId}</strong>
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const gameUrl = `${window.location.origin}/join/${gameId}`;
+                  navigator.clipboard.writeText(gameUrl);
+                  toast({
+                    title: "Link Copied!",
+                    description: "Game link copied to clipboard",
+                  });
+                }}
+                className="mt-2 border-wine text-wine hover:bg-rose"
+              >
+                📋 Copy Game Link
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -204,20 +311,8 @@ export default function Lobby() {
             </CardContent>
           </Card>
         )}
-
-        {isSpectator && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl mb-2">👀</div>
-              <h3 className="text-lg font-semibold mb-2">Spectator Mode</h3>
-              <p className="text-gray-600">
-                You're watching this game. You can see the action but won't participate in tasting.
-              </p>
-            </CardContent>
-          </Card>
-        )}
       </div>
-
+      
       {isHost && <AdminPanel gameId={gameId!} />}
     </div>
   );

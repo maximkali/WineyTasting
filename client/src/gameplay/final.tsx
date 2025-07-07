@@ -7,17 +7,35 @@ import { useGame } from "@/common/hooks/use-game";
 import { formatPrice, copyToClipboard } from "@/common/lib/game-utils";
 import Leaderboard from "@/gameplay/leaderboard";
 
+interface PlayerScore {
+  id: string;
+  displayName: string;
+  score: number;
+  isHost: boolean;
+}
+
+interface Bottle {
+  id: string;
+  labelName: string;
+  funName: string | null;
+  price: number;
+  roundIndex?: number;
+}
+
+interface LeaderboardResponse {
+  leaderboard: PlayerScore[];
+}
+
 export default function Final() {
   const { gameId } = useParams<{ gameId: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
   const playerId = localStorage.getItem("playerId");
-  const isSpectator = !playerId;
 
   const { data: gameData, isLoading } = useGame(gameId!);
   
-  const { data: leaderboardData } = useQuery({
+  const { data: leaderboardData } = useQuery<LeaderboardResponse>({
     queryKey: [`/api/games/${gameId}/leaderboard`],
     enabled: !!gameId,
   });
@@ -38,13 +56,11 @@ export default function Final() {
       <div className="min-h-screen bg-warm-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <div className="text-4xl mb-4">❌</div>
+            <div className="text-4xl mb-4">⏳</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Game Not Found
+              Loading Leaderboard
             </h1>
-            <Button onClick={() => setLocation("/")} className="wine-gradient text-white">
-              🍷 Return Home
-            </Button>
+            <p className="text-gray-600 mb-4">Please wait while we load the final results...</p>
           </CardContent>
         </Card>
       </div>
@@ -52,13 +68,13 @@ export default function Final() {
   }
 
   const { bottles } = gameData;
-  const { leaderboard } = leaderboardData;
+  const leaderboard = leaderboardData?.leaderboard || [];
   
   const winner = leaderboard[0];
-  const currentPlayer = leaderboard.find((p: any) => p.id === playerId);
+  const currentPlayer = leaderboard.find((p) => p.id === playerId);
   
   // Sort bottles by price (descending)
-  const sortedBottles = [...bottles].sort((a: any, b: any) => b.price - a.price);
+  const sortedBottles = [...bottles].sort((a: Bottle, b: Bottle) => b.price - a.price);
   const mostExpensive = sortedBottles[0];
   const leastExpensive = sortedBottles[sortedBottles.length - 1];
 
@@ -76,13 +92,13 @@ export default function Final() {
       await copyToClipboard(gameUrl);
       toast({
         title: "Link Copied!",
-        description: "Game link copied to clipboard",
+        description: "Game link has been copied to clipboard.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
+        description: "Failed to copy link to clipboard",
+        variant: "destructive"
       });
     }
   };
@@ -108,7 +124,7 @@ export default function Final() {
         </div>
 
         {/* Personal Summary */}
-        {!isSpectator && currentPlayer && (
+        {currentPlayer && (
           <Card className="mb-8">
             <CardContent className="p-6">
               <h2 className="text-2xl font-semibold mb-6">🎯 Your Performance</h2>
@@ -165,7 +181,7 @@ export default function Final() {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {sortedBottles.map((bottle: any, index: number) => (
+                  {sortedBottles.map((bottle: Bottle, index: number) => (
                     <tr key={bottle.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-2">
                         <span className="flex items-center space-x-2">

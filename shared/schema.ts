@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, jsonb, timestamp, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -40,7 +40,7 @@ export const players = pgTable("players", {
   displayName: text("display_name").notNull(),
   score: integer("score").notNull().default(0),
   isHost: boolean("is_host").notNull().default(false),
-  status: text("status").$type<'active' | 'kicked' | 'spectator'>().notNull().default('active'),
+  status: text("status").$type<'active' | 'kicked'>().notNull().default('active'),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -97,19 +97,50 @@ export const insertGambitSubmissionSchema = createInsertSchema(gambitSubmissions
   createdAt: true,
 });
 
+// Type helpers
+type GameStatus = 'setup' | 'lobby' | 'in_round' | 'countdown' | 'reveal' | 'gambit' | 'final';
+type PlayerStatus = 'active' | 'kicked';
+
 // Types
-export type Game = typeof games.$inferSelect;
-export type InsertGame = z.infer<typeof insertGameSchema>;
+export type Game = typeof games.$inferSelect & {
+  status: GameStatus;
+};
+
+export type InsertGame = Omit<typeof games.$inferInsert, 'status'> & {
+  status?: GameStatus;
+};
+
 export type Bottle = typeof bottles.$inferSelect;
-export type InsertBottle = z.infer<typeof insertBottleSchema>;
-export type Player = typeof players.$inferSelect;
-export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
-export type Round = typeof rounds.$inferSelect;
-export type InsertRound = z.infer<typeof insertRoundSchema>;
-export type Submission = typeof submissions.$inferSelect;
-export type InsertSubmission = z.infer<typeof insertSubmissionSchema>;
+export type InsertBottle = typeof bottles.$inferInsert;
+
+export type Player = typeof players.$inferSelect & {
+  status: PlayerStatus;
+};
+
+export type InsertPlayer = Omit<typeof players.$inferInsert, 'status'> & {
+  status?: PlayerStatus;
+};
+
+export type Round = typeof rounds.$inferSelect & {
+  bottleIds: string[];
+};
+
+export type InsertRound = Omit<typeof rounds.$inferInsert, 'bottleIds'> & {
+  bottleIds: string[] | { [key: number]: string };
+};
+
+export type Submission = typeof submissions.$inferSelect & {
+  ranking: string[];
+  tastingNotes: Record<string, string>;
+};
+
+export type InsertSubmission = Omit<typeof submissions.$inferInsert, 'ranking' | 'tastingNotes'> & {
+  ranking: string[] | { [key: number]: string };
+  tastingNotes: Record<string, string>;
+};
+
 export type GambitSubmission = typeof gambitSubmissions.$inferSelect;
-export type InsertGambitSubmission = z.infer<typeof insertGambitSubmissionSchema>;
+export type InsertGambitSubmission = typeof gambitSubmissions.$inferInsert;
 
 // Additional validation schemas
 export const createGameSchema = z.object({

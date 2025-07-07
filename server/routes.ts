@@ -2,10 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  createGameSchema, createGameWithConfigSchema, joinGameSchema, setGameConfigSchema, addBottlesSchema, 
+  createGameSchema, joinGameSchema, setGameConfigSchema, addBottlesSchema, 
   submitTastingSchema, submitGambitSchema 
 } from "@shared/schema";
-import { z } from "zod";
 import crypto from "crypto";
 
 function generateId(): string {
@@ -121,13 +120,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const players = await storage.getPlayersByGame(gameId);
       
-      if (!displayName) {
-        // Spectator mode
-        return res.json({ spectator: true, playerCount: players.length });
+      if (!displayName || displayName.trim().length < 3) {
+        return res.status(400).json({ error: 'Display name must be at least 3 characters long' });
       }
       
       // Check for duplicate names
-      let finalDisplayName = displayName;
+      let finalDisplayName = displayName.trim();
       const existingNames = players.map(p => p.displayName);
       let counter = 2;
       while (existingNames.includes(finalDisplayName)) {
@@ -174,8 +172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalBottles: config.totalBottles,
         totalRounds: config.totalRounds,
         bottlesPerRound: config.bottlesPerRound,
-        bottleEqPerPerson: config.bottleEqPerPerson, // Store as decimal
-        ozPerPersonPerBottle: config.ozPerPersonPerBottle, // Store as decimal
+        bottleEqPerPerson: config.bottleEqPerPerson?.toString(), // Convert to string for decimal
+        ozPerPersonPerBottle: config.ozPerPersonPerBottle?.toString() // Convert to string for decimal
       });
       
       res.json({ game: updatedGame });
@@ -402,10 +400,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Lock rounds to prevent further editing
-      await storage.updateGame(gameId, { roundsLocked: true });
+      // Update game status to lobby and lock rounds
+      await storage.updateGame(gameId, { 
+        status: 'lobby',
+        roundsLocked: true 
+      });
       
-      res.json({ success: true });
+      // Get the updated game data to return
+      const updatedGame = await storage.getGame(gameId);
+      res.json({ 
+        success: true, 
+        game: updatedGame 
+      });
     } catch (error) {
       console.error('Error organizing bottles:', error);
       res.status(500).json({ error: 'Failed to organize bottles' });
